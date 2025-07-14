@@ -25,6 +25,8 @@ Connect components via I2C:
   - DOWN → D3  
   - SELECT → D4  
 
+![circuit](mg_board.jpg)
+
 ## Usage
 1. Upload the `MagSenseUI.ino` sketch to your Arduino Nano.
 2. Use the buttons to navigate the OLED menu and select gain settings.
