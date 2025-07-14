@@ -18,70 +18,117 @@
       
     Configuration: Arduino Serial Port: Serial 115200
 */
+
 #include <Wire.h>
 #include <U8g2lib.h>
 #include "Adafruit_MLX90393.h"
 #include <EEPROM.h>
 
+// OLED display configuration
 U8G2_SH1106_128X64_NONAME_1_HW_I2C display(U8G2_R0);
+
+// Magnetic sensor instance
 Adafruit_MLX90393 magneticSensor;
 
-#define BUTTON_UP     2
-#define BUTTON_DOWN   3
-#define BUTTON_SELECT 4
+// Button pins
+const int BUTTON_UP = 2;
+const int BUTTON_DOWN = 3;
+const int BUTTON_SELECT = 4;
 
-const char gainLabels0[] PROGMEM = "1X";
-const char gainLabels1[] PROGMEM = "1.33X";
-const char gainLabels2[] PROGMEM = "1.67X";
-const char gainLabels3[] PROGMEM = "2X";
-const char gainLabels4[] PROGMEM = "2.5X";
-const char gainLabels5[] PROGMEM = "3X";
-const char gainLabels6[] PROGMEM = "4X";
-const char gainLabels7[] PROGMEM = "5X";
-const char gainLabels8[] PROGMEM = "Serial ON";
-
-const char *const gainLabels[] PROGMEM = {
-  gainLabels0, gainLabels1, gainLabels2, gainLabels3, gainLabels4,
-  gainLabels5, gainLabels6, gainLabels7, gainLabels8
+// Menu options
+const char* const gainLabels[] = {
+  "1X", "1.33X", "1.67X", "2X", "2.5X",
+  "3X", "4X", "5X", "Serial ON"
 };
-
 const mlx90393_gain gainValues[] = {
   MLX90393_GAIN_1X, MLX90393_GAIN_1_33X, MLX90393_GAIN_1_67X,
   MLX90393_GAIN_2X, MLX90393_GAIN_2_5X, MLX90393_GAIN_3X,
   MLX90393_GAIN_4X, MLX90393_GAIN_5X
 };
-
 const int TOTAL_OPTIONS = 9;
+const int visibleMenuOptions = 5;
+
+// Menu state variables
 int currentOption = 0;
+int menuScrollOffset = 0;
 bool isConfigured = false;
 bool serialModeActive = false;
+bool inMenuMode = true;
 
-const uint16_t TIMEOUT_MS = 3000;
-uint16_t lastInteractionTime = 0;
-bool interactionOccurred = false;
+// Timing control
+unsigned long menuStartTime = 0;
+const unsigned long MENU_TIMEOUT = 5000; // 5s timeout
+unsigned long lastMeasurementTime = 0;
+const unsigned long MEASUREMENT_INTERVAL = 500;
 
-uint16_t lastMeasurementTime = 0;
-const uint16_t MEASUREMENT_INTERVAL = 500;
-
+// Sensor reading variables
 float magX, magY, magZ;
 bool readSuccess = false;
 
-const int visibleMenuOptions = 5;
-int menuScrollOffset = 0;
+// Debounce variables for buttons
+unsigned long lastDebounceTimeUp = 0;
+unsigned long lastDebounceTimeDown = 0;
+unsigned long lastDebounceTimeSelect = 0;
+const unsigned long debounceDelay = 50;
 
-uint16_t lastButtonUpTime = 0;
-uint16_t lastButtonDownTime = 0;
-uint16_t lastButtonSelectTime = 0;
-const uint16_t debounceDelay = 200;
+int stableButtonUpState = HIGH;
+int stableButtonDownState = HIGH;
+int stableButtonSelectState = HIGH;
 
-// Print gain label stored in PROGMEM to save RAM
-void printGainLabel(int index, int x, int y) {
-  char buffer[12];
-  strcpy_P(buffer, (char*)pgm_read_word(&(gainLabels[index])));
-  display.setCursor(x, y);
-  display.print(buffer);
+int lastReadingUp = HIGH;
+int lastReadingDown = HIGH;
+int lastReadingSelect = HIGH;
+
+int lastButtonUpState = HIGH;
+int lastButtonDownState = HIGH;
+int lastButtonSelectState = HIGH;
+
+void setup() {
+  Serial.begin(115200);
+  display.begin();
+  display.enableUTF8Print();
+
+  pinMode(BUTTON_UP, INPUT_PULLUP);
+  pinMode(BUTTON_DOWN, INPUT_PULLUP);
+  pinMode(BUTTON_SELECT, INPUT_PULLUP);
+
+  showIntro();
+  display.setFont(u8g2_font_ncenB08_tr);
+
+  // Load saved option from EEPROM
+  int savedOption = EEPROM.read(0);
+  if (savedOption >= 0 && savedOption < TOTAL_OPTIONS) {
+    currentOption = savedOption;
+  }
+  adjustScroll();
+
+  if (!magneticSensor.begin_I2C()) {
+    showErrorMessage("Sensor not found");
+    while(1);
+  }
+
+  // Configure sensor resolutions, oversampling and filter
+  magneticSensor.setResolution(MLX90393_X, MLX90393_RES_17);
+  magneticSensor.setResolution(MLX90393_Y, MLX90393_RES_17);
+  magneticSensor.setResolution(MLX90393_Z, MLX90393_RES_17);
+  magneticSensor.setOversampling(MLX90393_OSR_3);
+  magneticSensor.setFilter(MLX90393_FILTER_5);
+
+  inMenuMode = true;
+  menuStartTime = millis();
+  showConfigurationMenu();
 }
 
+void loop() {
+  if (inMenuMode) {
+    handleMenuNavigation();  // Handle user input in the configuration menu
+  } else {
+    handleSensorReadings();  // Read sensor and display or send data via serial
+    checkMenuReturn();       // Check if SELECT button pressed to return to menu
+  }
+}
+
+// Display introductory splash screen
 void showIntro() {
   display.firstPage();
   do {
@@ -91,48 +138,17 @@ void showIntro() {
   delay(1000);
 }
 
-void setup() {
-  Serial.begin(115200);
-
-  display.begin();
-  display.enableUTF8Print();
-
-  showIntro();
-  
-  display.setFont(u8g2_font_ncenB08_tr);
-  
-  pinMode(BUTTON_UP, INPUT_PULLUP);
-  pinMode(BUTTON_DOWN, INPUT_PULLUP);
-  pinMode(BUTTON_SELECT, INPUT_PULLUP);
-
-  int savedOption = EEPROM.read(0);
-  currentOption = (savedOption >= 0 && savedOption < 8) ? savedOption : 0;
-
-  if (!magneticSensor.begin_I2C()) {
-    showErrorMessage("Sensor not found");
-    while (1);
-  }
-
-  magneticSensor.setGain(gainValues[currentOption]);
-  magneticSensor.setResolution(MLX90393_X, MLX90393_RES_17);
-  magneticSensor.setResolution(MLX90393_Y, MLX90393_RES_17);
-  magneticSensor.setResolution(MLX90393_Z, MLX90393_RES_17);
-  magneticSensor.setOversampling(MLX90393_OSR_3);
-  magneticSensor.setFilter(MLX90393_FILTER_5);
-
-  showConfigurationMenu();
+// Display error message and halt program
+void showErrorMessage(const char* msg) {
+  display.firstPage();
+  do {
+    display.setFont(u8g2_font_ncenB08_tr);
+    display.drawStr(5, 30, msg);
+  } while(display.nextPage());
+  while(1);
 }
 
-// Main loop: handle menu or sensor reading based on config state
-void loop() {
-  if (!isConfigured) {
-    handleMenu();
-  } else {
-    handleSensorReadings();
-  }
-}
-
-// Adjust menu scroll offset to keep current selection visible
+// Adjust the menu scroll to keep current option visible
 void adjustScroll() {
   if (currentOption < menuScrollOffset) {
     menuScrollOffset = currentOption;
@@ -141,161 +157,193 @@ void adjustScroll() {
   }
 }
 
-// Handle button inputs and menu navigation
-void handleMenu() {
-  bool upPressed = (digitalRead(BUTTON_UP) == LOW);
-  bool downPressed = (digitalRead(BUTTON_DOWN) == LOW);
-  bool selectPressed = (digitalRead(BUTTON_SELECT) == LOW);
-  uint16_t now = millis();
-  bool refreshDisplay = false;
-
-  if (upPressed && now - lastButtonUpTime > debounceDelay) {
-    currentOption = (currentOption - 1 + TOTAL_OPTIONS) % TOTAL_OPTIONS;
-    adjustScroll();
-    lastButtonUpTime = now;
-    refreshDisplay = true;
-    interactionOccurred = true;
-    lastInteractionTime = now;
-  }
-
-  if (downPressed && now - lastButtonDownTime > debounceDelay) {
-    currentOption = (currentOption + 1) % TOTAL_OPTIONS;
-    adjustScroll();
-    lastButtonDownTime = now;
-    refreshDisplay = true;
-    interactionOccurred = true;
-    lastInteractionTime = now;
-  }
-
-  if (selectPressed && now - lastButtonSelectTime > debounceDelay) {
-    if (currentOption == 8) {
-      serialModeActive = true;
-      isConfigured = true;
-      Serial.println("\n\n--- SERIAL MODE ACTIVATED ---");
-      Serial.println("Format: X[uT]  Y[uT]  Z[uT]");
-      Serial.println("----------------------------");
-    } else {
-      isConfigured = true;
-      EEPROM.write(0, currentOption);
-      magneticSensor.setGain(gainValues[currentOption]);
-    }
-    showConfigurationSummary();
-    lastButtonSelectTime = now;
-    return;
-  }
-
-  if (!interactionOccurred && now - lastInteractionTime >= TIMEOUT_MS) {
-    if (currentOption >= 8) currentOption = 0;
-    isConfigured = true;
-    EEPROM.write(0, currentOption);
-    showConfigurationSummary();
-    return;
-  }
-
-  if (refreshDisplay) {
-    showConfigurationMenu();
-  }
-}
-
-// Display the gain selection menu
+// Draw the configuration menu on the display
 void showConfigurationMenu() {
   display.firstPage();
   do {
+    display.setFont(u8g2_font_ncenB08_tr);
     display.drawFrame(0, 0, 128, 64);
     display.drawStr(8, 10, "Select option:");
     for (int i = 0; i < visibleMenuOptions; i++) {
-      int index = menuScrollOffset + i;
-      if (index >= TOTAL_OPTIONS) break;
+      int idx = menuScrollOffset + i;
+      if (idx >= TOTAL_OPTIONS) break;
       int y = 20 + i * 10;
-      if (index == currentOption) display.drawStr(0, y, ">");
-      printGainLabel(index, 10, y);
+      if (idx == currentOption) display.drawStr(0, y, ">");
+      display.setCursor(10, y);
+      display.print(gainLabels[idx]);
     }
-  } while (display.nextPage());
+  } while(display.nextPage());
 }
 
-// Show summary after configuration is done
+// Show a summary of the chosen configuration before starting measurement
 void showConfigurationSummary() {
   display.firstPage();
   do {
+    display.setFont(u8g2_font_ncenB08_tr);
     display.setCursor(8, 15);
     display.print("Configuration:");
     display.setCursor(8, 30);
-
-    if (currentOption == 8) {
+    if (serialModeActive) {
       display.print("Serial: ON");
       display.setCursor(8, 45);
       display.print("Display: OFF");
     } else {
-      display.drawFrame(0, 0, 128, 64);
       display.print("Gain: ");
-      printGainLabel(currentOption, 60, 30);
+      display.print(gainLabels[currentOption]);
     }
-  } while (display.nextPage());
-
+  } while(display.nextPage());
   delay(2000);
 }
 
-// Read sensor data and show on display or serial port
-// Also detect sudden variations >= 10 µT and show "-X-", "-Y-", "-Z-" alerts
+// Read and debounce the button states
+void readButtons() {
+  unsigned long currentTime = millis();
+
+  // UP button debounce
+  int readingUp = digitalRead(BUTTON_UP);
+  if (readingUp != lastReadingUp) lastDebounceTimeUp = currentTime;
+  if ((currentTime - lastDebounceTimeUp) > debounceDelay) stableButtonUpState = readingUp;
+  lastReadingUp = readingUp;
+
+  // DOWN button debounce
+  int readingDown = digitalRead(BUTTON_DOWN);
+  if (readingDown != lastReadingDown) lastDebounceTimeDown = currentTime;
+  if ((currentTime - lastDebounceTimeDown) > debounceDelay) stableButtonDownState = readingDown;
+  lastReadingDown = readingDown;
+
+  // SELECT button debounce
+  int readingSelect = digitalRead(BUTTON_SELECT);
+  if (readingSelect != lastReadingSelect) lastDebounceTimeSelect = currentTime;
+  if ((currentTime - lastDebounceTimeSelect) > debounceDelay) stableButtonSelectState = readingSelect;
+  lastReadingSelect = readingSelect;
+}
+
+// Handle navigation and selection inside the configuration menu
+void handleMenuNavigation() {
+  static bool needsRedraw = true;
+  bool buttonPressed = false;
+  unsigned long currentTime = millis();
+
+  readButtons();
+
+  // Navigate up in menu
+  if (stableButtonUpState == LOW && lastButtonUpState == HIGH) {
+    currentOption = (currentOption == 0) ? TOTAL_OPTIONS - 1 : currentOption - 1;
+    adjustScroll();
+    buttonPressed = true;
+    menuStartTime = currentTime;
+  }
+
+  // Navigate down in menu
+  if (stableButtonDownState == LOW && lastButtonDownState == HIGH) {
+    currentOption = (currentOption + 1) % TOTAL_OPTIONS;
+    adjustScroll();
+    buttonPressed = true;
+    menuStartTime = currentTime;
+  }
+
+  // Select current option
+  if (stableButtonSelectState == LOW && lastButtonSelectState == HIGH) {
+    if (currentOption == 8) {  // "Serial ON"
+      serialModeActive = true;
+    } else {
+      serialModeActive = false;
+      EEPROM.write(0, currentOption);
+      magneticSensor.setGain(gainValues[currentOption]);
+    }
+    isConfigured = true;
+    inMenuMode = false;
+    showConfigurationSummary();
+    return;
+  }
+
+  lastButtonUpState = stableButtonUpState;
+  lastButtonDownState = stableButtonDownState;
+  lastButtonSelectState = stableButtonSelectState;
+
+  // Exit menu automatically after timeout
+  if (currentTime - menuStartTime > MENU_TIMEOUT) {
+    isConfigured = true;
+    inMenuMode = false;
+    showConfigurationSummary();
+    return;
+  }
+
+  // Redraw menu if needed
+  if (buttonPressed || needsRedraw) {
+    showConfigurationMenu();
+    needsRedraw = false;
+  }
+}
+
+// Check if SELECT button is pressed to return to menu during measurement
+void checkMenuReturn() {
+  int reading = digitalRead(BUTTON_SELECT);
+  if (reading != lastButtonSelectState) {
+    lastDebounceTimeSelect = millis();
+  }
+  if ((millis() - lastDebounceTimeSelect) > debounceDelay) {
+    if (reading != stableButtonSelectState) {
+      stableButtonSelectState = reading;
+      if (stableButtonSelectState == LOW) {
+        returnToMenu();
+      }
+    }
+  }
+  lastButtonSelectState = reading;
+}
+
+// Return to configuration menu from measurement mode
+void returnToMenu() {
+  inMenuMode = true;
+  menuStartTime = millis();
+  showConfigurationMenu();
+}
+
+// Read sensor data and display or send via serial
 void handleSensorReadings() {
-  static float prevMagX = 0, prevMagY = 0, prevMagZ = 0;
-  uint16_t now = millis();
+  static float prevX = 0, prevY = 0, prevZ = 0;
+  unsigned long now = millis();
 
   if (now - lastMeasurementTime >= MEASUREMENT_INTERVAL) {
     lastMeasurementTime = now;
     readSuccess = magneticSensor.readData(&magX, &magY, &magZ);
 
     if (serialModeActive && readSuccess) {
-      Serial.print("X:  "); Serial.print(magX, 2); Serial.print(" uT\t");
-      Serial.print("Y:  "); Serial.print(magY, 2); Serial.print(" uT\t");
-      Serial.print("Z:  "); Serial.print(magZ, 2); Serial.println(" uT");
+      Serial.print("X: "); Serial.print(magX, 2); Serial.print(" uT\t");
+      Serial.print("Y: "); Serial.print(magY, 2); Serial.print(" uT\t");
+      Serial.print("Z: "); Serial.print(magZ, 2); Serial.println(" uT");
     }
 
-    if (!serialModeActive || currentOption != 8) {
+    if (!serialModeActive) {
       display.firstPage();
       do {
+        display.setFont(u8g2_font_ncenB08_tr);
         display.drawFrame(0, 0, 128, 64);
-
         if (readSuccess) {
+          // Mark large changes with '>'
+          char markX = abs(magX - prevX) > 15 ? '>' : ' ';
+          char markY = abs(magY - prevY) > 15 ? '>' : ' ';
+          char markZ = abs(magZ - prevZ) > 15 ? '>' : ' ';
+
           display.setCursor(12, 15);
-          display.print("X : "); 
-          display.print(magX, 1); 
-          display.print(" uT");
-          if (abs(magX - prevMagX) >= 10) display.print(" -X-");
-
+          display.print("X: "); display.print(magX, 1); display.print(" uT "); display.print(markX);
           display.setCursor(12, 30);
-          display.print("Y : "); 
-          display.print(magY, 1); 
-          display.print(" uT");
-          if (abs(magY - prevMagY) >= 10) display.print(" -Y-");
-
+          display.print("Y: "); display.print(magY, 1); display.print(" uT "); display.print(markY);
           display.setCursor(12, 45);
-          display.print("Z : "); 
-          display.print(magZ, 1);
-          display.print(" uT");
-          if (abs(magZ - prevMagZ) >= 10) display.print(" -Z-");
-
+          display.print("Z: "); display.print(magZ, 1); display.print(" uT "); display.print(markZ);
           display.setCursor(12, 60);
           display.print("Gain: ");
-          printGainLabel(currentOption, 60, 60);
+          display.print(gainLabels[currentOption]);
         } else {
           display.setCursor(10, 30);
           display.print("Read error");
         }
-      } while (display.nextPage());
+      } while(display.nextPage());
     }
 
-    // Save current readings for next comparison
-    prevMagX = magX;
-    prevMagY = magY;
-    prevMagZ = magZ;
+    prevX = magX;
+    prevY = magY;
+    prevZ = magZ;
   }
-}
-
-// Show error message on display
-void showErrorMessage(const char* message) {
-  display.firstPage();
-  do {
-    display.drawStr(5, 30, message);
-  } while (display.nextPage());
 }
