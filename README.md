@@ -12,7 +12,7 @@ MagSenseUI is a simple OLED-based interface for configuring the MLX90393 magneti
 
 <img src="nano.jpg" width="40%">
 <img src="mlx90393.jpg" width="50%">
-<img src="ole.webp" width="30%">
+<img src="ole.jpg" width="30%">
 
 
 ## Wiring Diagram
