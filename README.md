@@ -8,6 +8,24 @@ The **MagSenseUI** project was developed to address a specific diagnostic challe
 
 The program includes an intuitive menu system that allows users to configure the sensor gain and choose the data output mode. Users can select whether the magnetic field readings are displayed directly on the OLED screen or streamed via the Arduino's serial port to a connected PC. This flexibility makes it easy to adapt the system for both standalone field diagnostics and detailed data logging or analysis on a computer.
 
+**Select option:**
+1X
+
+1.33X
+
+1.67X
+
+2X
+
+2.5X
+
+3X 
+
+4X
+
+5X
+
+Serial ON
 
 
 ### 🧩 Problem Context
