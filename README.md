@@ -10,7 +10,7 @@ MagSenseUI is a simple OLED-based interface for configuring the MLX90393 magneti
 - MLX90393 Magnetic Sensor
 - Push Buttons (x3)
 
-![nano](nano.jpg
+![nano](nano.jpg)
 
 ![mlx](mlx90393.jpg)
 
