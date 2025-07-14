@@ -123,4 +123,4 @@ Connect components via I2C:
 3. Configuration is saved to EEPROM.
 4. Optionally activate Serial Mode to stream magnetic field data (X, Y, Z in µT).
 
-CODE: (This)[code.ino]
+CODE: [this](code.ino)
