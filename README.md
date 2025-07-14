@@ -10,9 +10,65 @@ MagSenseUI is a simple OLED-based interface for configuring the MLX90393 magneti
 - MLX90393 Magnetic Sensor
 - Push Buttons (x3)
 
+
+
+---
+
+## 🔧 Technical Specifications
+
+### 🧠 Arduino Nano
+The **Arduino Nano** is a compact, breadboard-friendly microcontroller board based on the **ATmega328P**. It is ideal for small-scale embedded projects.
+
+- **Microcontroller**: ATmega328P
+- **Operating Voltage**: 5V
+- **Input Voltage (recommended)**: 7–12V
+- **Digital I/O Pins**: 14 (6 PWM outputs)
+- **Analog Input Pins**: 8
+- **Flash Memory**: 32 KB (2 KB used by bootloader)
+- **SRAM**: 2 KB
+- **EEPROM**: 1 KB
+- **Clock Speed**: 16 MHz
+- **Communication**: UART, I2C (A4/A5), SPI
+- **USB Interface**: Mini USB (via CH340 or FT232)
+
 <img src="nano.jpg" width="40%">
+
+---
+
+### 🧲 MLX90393 Magnetic Sensor
+The **MLX90393** is a highly sensitive 3-axis magnetometer designed for precision magnetic field sensing.
+
+- **Measurement Axes**: X, Y, Z
+- **Output**: Magnetic field in microteslas (µT)
+- **Resolution**: Configurable (up to 0.161 µT/LSB)
+- **Gain Settings**: 1X to 5X (selectable)
+- **Interface**: I2C (also supports SPI)
+- **I2C Address**: 0x0C (default)
+- **Supply Voltage**: 2.2V – 3.6V
+- **Current Consumption**: ~2.5 mA (active), ~1 µA (standby)
+- **Features**:
+  - Programmable gain, resolution, oversampling, and filtering
+  - High sensitivity for detecting small magnetic variations
+  - Ideal for contactless position sensing and field mapping
+
 <img src="mlx90393.jpg" width="50%">
+
+---
+
+### 🖥️ OLED Display 1.3" (SH1106)
+This **1.3-inch OLED** display uses the **SH1106** driver and communicates via I2C. It is perfect for compact UIs in embedded systems.
+
+- **Resolution**: 128 × 64 pixels
+- **Display Type**: Monochrome OLED
+- **Driver IC**: SH1106
+- **Interface**: I2C (SDA/SCL)
+- **Operating Voltage**: 3.3V – 5V
+- **Power Consumption**: Low (no backlight needed)
+- **Viewing Angle**: >160°
+- **Library Support**: U8g2, Adafruit SH1106, etc.
+
 <img src="ole.jpg" width="30%">
+
 
 
 ## Wiring Diagram
