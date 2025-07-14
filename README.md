@@ -124,6 +124,26 @@ Connect components via I2C:
 4. Optionally activate Serial Mode to stream magnetic field data (X, Y, Z in µT).
 
 ```CPP
+/*
+  Project: MagSenseUI
+  Author: Fran-Byte
+  Description:
+    MagSenseUI is an interface designed for configuring and monitoring the MLX90393 magnetic sensor.
+    It allows the user to select sensor gain levels via an OLED display and physical buttons.
+    The system can also enter a Serial Mode to stream live magnetic field data (X, Y, Z in microteslas).
+
+    Purpose:
+      Under the influence of a strong magnetic field, the system aims to detect and discriminate
+      small variations or secondary magnetic fields, allowing precise magnetic sensing applications.
+
+    Features:
+      - OLED menu for gain selection
+      - EEPROM-based configuration storage
+      - Serial output mode for live sensor data
+      - Auto timeout to proceed with saved or default configuration
+      
+    Configuratio: Arduino Seria Port: Serial 115200
+*/
 #include <Wire.h>
 #include <U8g2lib.h>
 #include "Adafruit_MLX90393.h"
@@ -136,8 +156,19 @@ Adafruit_MLX90393 magneticSensor;
 #define BUTTON_DOWN   3
 #define BUTTON_SELECT 4
 
-const char* gainLabels[] = {
-  "1X", "1.33X", "1.67X", "2X", "2.5X", "3X", "4X", "5X", "Serial ON"
+const char gainLabels0[] PROGMEM = "1X";
+const char gainLabels1[] PROGMEM = "1.33X";
+const char gainLabels2[] PROGMEM = "1.67X";
+const char gainLabels3[] PROGMEM = "2X";
+const char gainLabels4[] PROGMEM = "2.5X";
+const char gainLabels5[] PROGMEM = "3X";
+const char gainLabels6[] PROGMEM = "4X";
+const char gainLabels7[] PROGMEM = "5X";
+const char gainLabels8[] PROGMEM = "Serial ON";
+
+const char *const gainLabels[] PROGMEM = {
+  gainLabels0, gainLabels1, gainLabels2, gainLabels3, gainLabels4,
+  gainLabels5, gainLabels6, gainLabels7, gainLabels8
 };
 
 const mlx90393_gain gainValues[] = {
@@ -151,12 +182,12 @@ int currentOption = 0;
 bool isConfigured = false;
 bool serialModeActive = false;
 
-const unsigned long TIMEOUT_MS = 3000;
-unsigned long lastInteractionTime = 0;
+const uint16_t TIMEOUT_MS = 3000;
+uint16_t lastInteractionTime = 0;
 bool interactionOccurred = false;
 
-unsigned long lastMeasurementTime = 0;
-const unsigned long MEASUREMENT_INTERVAL = 500;
+uint16_t lastMeasurementTime = 0;
+const uint16_t MEASUREMENT_INTERVAL = 500;
 
 float magX, magY, magZ;
 bool readSuccess = false;
@@ -164,10 +195,18 @@ bool readSuccess = false;
 const int visibleMenuOptions = 5;
 int menuScrollOffset = 0;
 
-unsigned long lastButtonUpTime = 0;
-unsigned long lastButtonDownTime = 0;
-unsigned long lastButtonSelectTime = 0;
-const unsigned long debounceDelay = 200;
+uint16_t lastButtonUpTime = 0;
+uint16_t lastButtonDownTime = 0;
+uint16_t lastButtonSelectTime = 0;
+const uint16_t debounceDelay = 200;
+
+// Print gain label stored in PROGMEM to save RAM
+void printGainLabel(int index, int x, int y) {
+  char buffer[12];
+  strcpy_P(buffer, (char*)pgm_read_word(&(gainLabels[index])));
+  display.setCursor(x, y);
+  display.print(buffer);
+}
 
 void setup() {
   Serial.begin(115200);
@@ -198,6 +237,7 @@ void setup() {
   showConfigurationMenu();
 }
 
+// Main loop: handle menu or sensor reading based on config state
 void loop() {
   if (!isConfigured) {
     handleMenu();
@@ -206,6 +246,7 @@ void loop() {
   }
 }
 
+// Adjust menu scroll offset to keep current selection visible
 void adjustScroll() {
   if (currentOption < menuScrollOffset) {
     menuScrollOffset = currentOption;
@@ -214,11 +255,12 @@ void adjustScroll() {
   }
 }
 
+// Handle button inputs and menu navigation
 void handleMenu() {
   bool upPressed = (digitalRead(BUTTON_UP) == LOW);
   bool downPressed = (digitalRead(BUTTON_DOWN) == LOW);
   bool selectPressed = (digitalRead(BUTTON_SELECT) == LOW);
-  unsigned long now = millis();
+  uint16_t now = millis();
   bool refreshDisplay = false;
 
   if (upPressed && now - lastButtonUpTime > debounceDelay) {
@@ -269,46 +311,49 @@ void handleMenu() {
   }
 }
 
+// Display the gain selection menu
 void showConfigurationMenu() {
   display.firstPage();
   do {
     display.drawFrame(0, 0, 128, 64);
-    display.drawStr(5, 10, "Select option:");
+    display.drawStr(8, 10, "Select option:");
     for (int i = 0; i < visibleMenuOptions; i++) {
       int index = menuScrollOffset + i;
       if (index >= TOTAL_OPTIONS) break;
       int y = 20 + i * 10;
       if (index == currentOption) display.drawStr(0, y, ">");
-      display.setCursor(10, y);
-      display.print(gainLabels[index]);
+      printGainLabel(index, 10, y);
     }
   } while (display.nextPage());
 }
 
+// Show summary after configuration is done
 void showConfigurationSummary() {
   display.firstPage();
   do {
-    display.setCursor(5, 15);
+    display.setCursor(8, 15);
     display.print("Configuration:");
-    display.setCursor(5, 30);
+    display.setCursor(8, 30);
 
     if (currentOption == 8) {
       display.print("Serial: ON");
-      display.setCursor(5, 45);
+      display.setCursor(8, 45);
       display.print("Display: OFF");
     } else {
       display.drawFrame(0, 0, 128, 64);
       display.print("Gain: ");
-      display.setCursor(60, 30);
-      display.print(gainLabels[currentOption]);
+      printGainLabel(currentOption, 60, 30);
     }
   } while (display.nextPage());
 
   delay(2000);
 }
 
+// Read sensor data and show on display or serial port
+// Also detect sudden variations >= 10 µT and show "-X-", "-Y-", "-Z-" alerts
 void handleSensorReadings() {
-  unsigned long now = millis();
+  static float prevMagX = 0, prevMagY = 0, prevMagZ = 0;
+  uint16_t now = millis();
 
   if (now - lastMeasurementTime >= MEASUREMENT_INTERVAL) {
     lastMeasurementTime = now;
@@ -326,28 +371,44 @@ void handleSensorReadings() {
         display.drawFrame(0, 0, 128, 64);
 
         if (readSuccess) {
-          display.setCursor(5, 15);
-          display.print("X: "); display.print(magX, 1); display.print(" uT");
-          display.setCursor(5, 30);
-          display.print("Y: "); display.print(magY, 1); display.print(" uT");
-          display.setCursor(5, 45);
-          display.print("Z: "); display.print(magZ, 1); display.print(" uT");
-          display.setCursor(5, 60);
-          display.print("Gain:  ");
-          display.print(gainLabels[currentOption]);
+          display.setCursor(12, 15);
+          display.print("X : "); 
+          display.print(magX, 1); 
+          if (abs(magX - prevMagX) >= 10) display.print(" -X-");
+
+          display.setCursor(12, 30);
+          display.print("Y : "); 
+          display.print(magY, 1); 
+          if (abs(magY - prevMagY) >= 10) display.print(" -Y-");
+
+          display.setCursor(12, 45);
+          display.print("Z : "); 
+          display.print(magZ, 1); 
+          if (abs(magZ - prevMagZ) >= 10) display.print(" -Z-");
+
+          display.setCursor(12, 60);
+          display.print("Gain: ");
+          printGainLabel(currentOption, 60, 60);
         } else {
-          display.setCursor(5, 30);
+          display.setCursor(10, 30);
           display.print("Read error");
         }
       } while (display.nextPage());
     }
+
+    // Save current readings for next comparison
+    prevMagX = magX;
+    prevMagY = magY;
+    prevMagZ = magZ;
   }
 }
 
+// Show error message on display
 void showErrorMessage(const char* message) {
   display.firstPage();
   do {
     display.drawStr(5, 30, message);
   } while (display.nextPage());
 }
+
 ```
