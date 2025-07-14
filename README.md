@@ -272,7 +272,8 @@ void handleMenu() {
 void showConfigurationMenu() {
   display.firstPage();
   do {
-    display.drawStr(0, 8, "Select option:");
+    display.drawFrame(0, 0, 128, 64);
+    display.drawStr(5, 10, "Select option:");
     for (int i = 0; i < visibleMenuOptions; i++) {
       int index = menuScrollOffset + i;
       if (index >= TOTAL_OPTIONS) break;
@@ -287,15 +288,16 @@ void showConfigurationMenu() {
 void showConfigurationSummary() {
   display.firstPage();
   do {
-    display.setCursor(0, 15);
+    display.setCursor(5, 15);
     display.print("Configuration:");
-    display.setCursor(0, 30);
+    display.setCursor(5, 30);
 
     if (currentOption == 8) {
       display.print("Serial: ON");
-      display.setCursor(0, 45);
+      display.setCursor(5, 45);
       display.print("Display: OFF");
     } else {
+      display.drawFrame(0, 0, 128, 64);
       display.print("Gain: ");
       display.setCursor(60, 30);
       display.print(gainLabels[currentOption]);
@@ -313,26 +315,28 @@ void handleSensorReadings() {
     readSuccess = magneticSensor.readData(&magX, &magY, &magZ);
 
     if (serialModeActive && readSuccess) {
-      Serial.print("X: "); Serial.print(magX, 2); Serial.print(" uT\t");
-      Serial.print("Y: "); Serial.print(magY, 2); Serial.print(" uT\t");
-      Serial.print("Z: "); Serial.print(magZ, 2); Serial.println(" uT");
+      Serial.print("X:  "); Serial.print(magX, 2); Serial.print(" uT\t");
+      Serial.print("Y:  "); Serial.print(magY, 2); Serial.print(" uT\t");
+      Serial.print("Z:  "); Serial.print(magZ, 2); Serial.println(" uT");
     }
 
     if (!serialModeActive || currentOption != 8) {
       display.firstPage();
       do {
+        display.drawFrame(0, 0, 128, 64);
+
         if (readSuccess) {
-          display.setCursor(0, 15);
+          display.setCursor(5, 15);
           display.print("X: "); display.print(magX, 1); display.print(" uT");
-          display.setCursor(0, 30);
+          display.setCursor(5, 30);
           display.print("Y: "); display.print(magY, 1); display.print(" uT");
-          display.setCursor(0, 45);
+          display.setCursor(5, 45);
           display.print("Z: "); display.print(magZ, 1); display.print(" uT");
-          display.setCursor(0, 60);
-          display.print("Gain: ");
+          display.setCursor(5, 60);
+          display.print("Gain:  ");
           display.print(gainLabels[currentOption]);
         } else {
-          display.setCursor(0, 30);
+          display.setCursor(5, 30);
           display.print("Read error");
         }
       } while (display.nextPage());
@@ -343,7 +347,7 @@ void handleSensorReadings() {
 void showErrorMessage(const char* message) {
   display.firstPage();
   do {
-    display.drawStr(0, 30, message);
+    display.drawStr(5, 30, message);
   } while (display.nextPage());
 }
 ```
