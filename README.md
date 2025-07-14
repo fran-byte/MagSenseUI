@@ -102,7 +102,7 @@ This **1.3-inch OLED** display uses the **SH1106** driver and communicates via I
 - **Viewing Angle**: >160°
 - **Library Support**: U8g2, Adafruit SH1106, etc.
 
-<img src="ole.jpg" width="30%">
+<img src="oled.jpg" width="30%">
 
 
 
