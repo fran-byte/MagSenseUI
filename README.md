@@ -1,3 +1,5 @@
+
+
 # MagSenseUI
 
 MagSenseUI is a simple OLED-based interface for configuring the MLX90393 magnetic sensor using an Arduino Nano. It supports gain selection, EEPROM storage, and real-time magnetic field data streaming via Serial.
@@ -7,6 +9,12 @@ MagSenseUI is a simple OLED-based interface for configuring the MLX90393 magneti
 - OLED Display 1.3" (SH1106)
 - MLX90393 Magnetic Sensor
 - Push Buttons (x3)
+
+![nano](nano.jpg
+
+![mlx](mlx90393.jpg)
+
+![display](ole.webp)
 
 ## Wiring Diagram
 Connect components via I2C:
