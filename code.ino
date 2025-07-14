@@ -82,13 +82,25 @@ void printGainLabel(int index, int x, int y) {
   display.print(buffer);
 }
 
+void showIntro() {
+  display.firstPage();
+  do {
+    display.setFont(u8g2_font_logisoso20_tr);
+    display.drawStr(4, 40, "Fran-Byte");
+  } while (display.nextPage());
+  delay(1000);
+}
+
 void setup() {
   Serial.begin(115200);
 
   display.begin();
   display.enableUTF8Print();
-  display.setFont(u8g2_font_ncenB08_tr);
 
+  showIntro();
+  
+  display.setFont(u8g2_font_ncenB08_tr);
+  
   pinMode(BUTTON_UP, INPUT_PULLUP);
   pinMode(BUTTON_DOWN, INPUT_PULLUP);
   pinMode(BUTTON_SELECT, INPUT_PULLUP);
