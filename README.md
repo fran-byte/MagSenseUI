@@ -2,7 +2,26 @@
 
 # MagSenseUI
 
-MagSenseUI is a simple OLED-based interface for configuring the MLX90393 magnetic sensor using an Arduino Nano. It supports gain selection, EEPROM storage, and real-time magnetic field data streaming via Serial.
+## 🎯 Project Purpose
+
+The **MagSenseUI** project was developed to address a specific diagnostic challenge in electromechanical systems—particularly in machines like **Bill Validators** that rely on magnetic sensors for operation.
+
+### 🧩 Problem Context
+
+These machines often operate in environments where **strong neodymium magnets** are permanently present. While these magnets are essential to the machine’s function, they also create a **constant magnetic field** that can interfere with nearby components.
+
+One such component is the **metallic bearing**. Under normal conditions, the bearing is non-magnetic. However, if it becomes **magnetized due to external contamination** (e.g., exposure to magnetic particles or prolonged proximity to strong fields), it can **distort the local magnetic environment**. This distortion may lead to **false readings or operational errors** in the machine’s magnetic sensors.
+
+### 🧪 Why MagSenseUI?
+
+While a traditional compass can detect strong magnetization, it **fails to detect subtle or low-level magnetization**. This is where **MagSenseUI** excels.
+
+- It uses the **MLX90393** high-resolution 3-axis magnetometer to **detect even slight magnetic anomalies**.
+- The system allows the user to **select different gain levels**, enhancing sensitivity to weak fields.
+- Through a simple OLED interface and serial output mode, it provides **real-time feedback** on the magnetic field strength in microteslas (µT).
+- This enables technicians to **identify which bearing is magnetized**, even if the magnetization is minimal and invisible to conventional tools.
+
+
 
 ## Hardware Components
 - Arduino Nano
