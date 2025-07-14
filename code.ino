@@ -16,7 +16,7 @@
       - Serial output mode for live sensor data
       - Auto timeout to proceed with saved or default configuration
       
-    Configuratio: Arduino Seria Port: Serial 115200
+    Configuration: Arduino Serial Port: Serial 115200
 */
 #include <Wire.h>
 #include <U8g2lib.h>
@@ -248,16 +248,19 @@ void handleSensorReadings() {
           display.setCursor(12, 15);
           display.print("X : "); 
           display.print(magX, 1); 
+          display.print(" uT");
           if (abs(magX - prevMagX) >= 10) display.print(" -X-");
 
           display.setCursor(12, 30);
           display.print("Y : "); 
           display.print(magY, 1); 
+          display.print(" uT");
           if (abs(magY - prevMagY) >= 10) display.print(" -Y-");
 
           display.setCursor(12, 45);
           display.print("Z : "); 
-          display.print(magZ, 1); 
+          display.print(magZ, 1);
+          display.print(" uT");
           if (abs(magZ - prevMagZ) >= 10) display.print(" -Z-");
 
           display.setCursor(12, 60);
