@@ -52,16 +52,6 @@ While a traditional compass can detect strong magnetization, it **fails to detec
 - Through a simple OLED interface and serial output mode, it provides **real-time feedback** on the magnetic field strength in microteslas (µT).
 - This enables technicians to **identify which bearing is magnetized**, even if the magnetization is minimal and invisible to conventional tools.
 
-
-
-## Hardware Components
-- Arduino Nano
-- OLED Display 1.3" (SH1106)
-- MLX90393 Magnetic Sensor
-- Push Buttons (x3)
-
-
-
 ---
 
 ## 🔧 Technical Specifications
