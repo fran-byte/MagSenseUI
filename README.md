@@ -1,6 +1,7 @@
 
 
 # MagSenseUI
+# Diagnostic Interface for Magnetic Sensor Calibration in Electromechanical Systems
 
 ## 🎯 Project Purpose
 
@@ -8,17 +9,31 @@ The **MagSenseUI** project was developed to address a specific diagnostic challe
 
 The program includes an intuitive **menu** system that allows users to configure the **sensor gain** and choose the data output mode. Users can select whether the magnetic field readings are displayed directly on the OLED screen or streamed via the Arduino's **serial port** to a connected PC. This flexibility makes it easy to adapt the system for both standalone field diagnostics and detailed data logging or analysis on a computer.
 
-| **Select option:** |
-|--------------------|
-| 1X                 |
-| 1.33X              |
-| 1.67X              |
-| 2X                 |
-| 2.5X               |
-| 3X                 |
-| 4X                 |
-| 5X                 |
-| Serial ON          |
+## 🧰 **Hardware Components**
+
+| Component         | Description                                      |
+|------------------|--------------------------------------------------|
+| Arduino Nano      | Microcontroller (ATmega328P)                    |
+| OLED Display 1.3" | SH1106-based I2C monochrome display             |
+| MLX90393 Sensor   | 3-axis magnetometer with adjustable gain        |
+| Push Buttons (x3) | For menu navigation and selection               |
+
+
+## 🧭 **Menu System**
+
+```plaintext
+[ Configuration Menu ]
+-----------------------
+1. Gain: 1X
+2. Gain: 1.33X
+3. Gain: 1.67X
+4. Gain: 2X
+5. Gain: 2.5X
+6. Gain: 3X
+7. Gain: 4X
+8. Gain: 5X
+9. Enable Serial Output
+```
 
 
 
@@ -117,10 +132,13 @@ Connect components via I2C:
 
 ![circuit](mg_board.jpg)
 
-## Usage
-1. Upload the `MagSenseUI.ino` sketch to your Arduino Nano.
-2. Use the buttons to navigate the OLED menu and select gain settings.
-3. Configuration is saved to EEPROM.
-4. Optionally activate Serial Mode to stream magnetic field data (X, Y, Z in µT).
+## 🚀 **How to Use**
 
-CODE: [this](code.ino)
+1. Upload the `MagSenseUI.ino` sketch to your Arduino Nano.
+2. Use the buttons to navigate the OLED menu and select gain levels.
+3. Settings are saved to EEPROM.
+4. Optionally enable Serial Mode to stream real-time magnetic field data (X, Y, Z in µT) to a PC.
+
+📂 **Code**: [View Source Code](code.ino)
+
+
