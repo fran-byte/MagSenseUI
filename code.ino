@@ -322,9 +322,9 @@ void handleSensorReadings() {
         display.drawFrame(0, 0, 128, 64);
         if (readSuccess) {
           // Mark large changes with '>'
-          char markX = abs(magX - prevX) > 15 ? '>' : ' ';
-          char markY = abs(magY - prevY) > 15 ? '>' : ' ';
-          char markZ = abs(magZ - prevZ) > 15 ? '>' : ' ';
+          char markX = abs(magX - prevX) > 25 ? '>' : ' ';
+          char markY = abs(magY - prevY) > 25 ? '>' : ' ';
+          char markZ = abs(magZ - prevZ) > 25 ? '>' : ' ';
 
           display.setCursor(12, 15);
           display.print("X: "); display.print(magX, 1); display.print(" uT "); display.print(markX);
