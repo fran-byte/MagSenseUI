@@ -15,7 +15,7 @@ The program includes an intuitive **menu** system that allows users to configure
 |------------------|--------------------------------------------------|
 | Arduino Nano      | Microcontroller (ATmega328P)                    |
 | OLED Display 1.3" | SH1106-based I2C monochrome display             |
-| MLX90393 Sensor   | 3-axis magnetometer with adjustable gain        |
+| [MLX90393 Sensor](doc/MLX90393.PDF)   | 3-axis magnetometer with adjustable gain        |
 | Push Buttons (x3) | For menu navigation and selection               |
 
 
