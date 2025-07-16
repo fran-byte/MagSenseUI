@@ -91,6 +91,10 @@ The **MLX90393** is a highly sensitive 3-axis magnetometer designed for precisio
   - High sensitivity for detecting small magnetic variations
   - Ideal for contactless position sensing and field mapping
 
+### ⚠️ Limitations
+
+It cannot accurately detect static magnetic fields below 0.1 µT.
+
 <img src="mlx90393.jpg" width="50%">
 
 ---
