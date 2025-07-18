@@ -18,6 +18,7 @@ The program includes an intuitive **menu** system that allows users to configure
 | [MLX90393 Sensor](doc/MLX90393.PDF)   | 3-axis magnetometer with adjustable gain        |
 | Push Buttons (x3) | For menu navigation and selection               |
 
+<img src="doc/3d.png" width="40%">
 
 ## 🧭 **Menu System**
 
