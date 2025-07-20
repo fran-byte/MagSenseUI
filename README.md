@@ -92,6 +92,28 @@ The **MLX90393** is a highly sensitive 3-axis magnetometer designed for precisio
   - High sensitivity for detecting small magnetic variations
   - Ideal for contactless position sensing and field mapping
 
+### I2C 
+
+I²C uses 2 lines: SDA (data) and SCL (clock)
+
+It works between a master (e.g. Arduino Nano) and one or more slaves (e.g. sensor)
+
+The master:
+
+1. Starts the communication
+
+2. Sends the slave’s address
+
+3. Sends or requests data
+
+4. Ends the communication
+
+Each bit is sent with a clock pulse
+
+Common because it allows multiple devices with just two wires
+
+
+
 ### ⚠️ Limitations
 
 It cannot accurately detect static magnetic fields below 0.1 µT.
