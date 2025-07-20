@@ -159,9 +159,6 @@ Connect components via I2C:
 
 📂 **Code**: [View Source Code](code.ino)
 
-Aquí tienes la sección editada en inglés con tu nombre incluido:
-
-
 ## 📄 License
 
 This project is licensed under the MIT License.
