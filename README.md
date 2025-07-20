@@ -92,7 +92,10 @@ The **MLX90393** is a highly sensitive 3-axis magnetometer designed for precisio
   - High sensitivity for detecting small magnetic variations
   - Ideal for contactless position sensing and field mapping
 
-### I2C 
+### I2C (Inter-Integrated Circuit)
+
+I²C is a two-wire communication protocol used to connect microcontrollers with peripheral devices like sensors, displays, and EEPROMs.
+
 
 I²C uses 2 lines: SDA (data) and SCL (clock)
 
