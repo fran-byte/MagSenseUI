@@ -92,6 +92,12 @@ The **MLX90393** is a highly sensitive 3-axis magnetometer designed for precisio
   - High sensitivity for detecting small magnetic variations
   - Ideal for contactless position sensing and field mapping
 
+### ⚠️ Limitations
+
+It cannot accurately detect static magnetic fields below 0.1 µT.
+
+<img src="mlx90393.jpg" width="50%">
+
 ### I2C (Inter-Integrated Circuit)
 
 I²C is a two-wire communication protocol used to connect microcontrollers with peripheral devices like sensors, displays, and EEPROMs.
@@ -114,14 +120,6 @@ The master:
 Each bit is sent with a clock pulse
 
 Common because it allows multiple devices with just two wires
-
-
-
-### ⚠️ Limitations
-
-It cannot accurately detect static magnetic fields below 0.1 µT.
-
-<img src="mlx90393.jpg" width="50%">
 
 ---
 
