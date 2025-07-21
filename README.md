@@ -163,8 +163,8 @@ This **1.3-inch OLED** display uses the **SH1106** driver and communicates via I
   - **SCL → GPI10**  PIN 12
 
 - **MLX90393 Sensor**  
-  - **SDA → GPIO9**  
-  - **SCL → GPI10**
+  - **SDA → GPIO9**  PIN 11
+  - **SCL → GPI10**  PIN 12
 
 - **Push Buttons**  
   - **UP → GPIO11**  PIN 13
