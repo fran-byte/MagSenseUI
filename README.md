@@ -80,7 +80,7 @@ The **ESP32 Mini** is a compact, ultra-low-power microcontroller module based on
 
 
 
-<img src="doc/esp32.avif" width="40%">
+<img src="doc/esp32.avif" width="80%">
 
 ---
 
