@@ -154,23 +154,22 @@ This **1.3-inch OLED** display uses the **SH1106** driver and communicates via I
 <img src="oled.jpg" width="30%">
 
 
-
 ## Wiring Diagram
 
 ## 🔌 Connect Components via I²C (ESP32 Mini)
 
 - **OLED Display (SH1106)**  
-  - **SDA → GPIO21**  
-  - **SCL → GPIO22**
+  - **SDA → GPIO9**  PIN 11
+  - **SCL → GPI10**  PIN 12
 
 - **MLX90393 Sensor**  
-  - **SDA → GPIO21** *(shared with OLED)*  
-  - **SCL → GPIO22** *(shared with OLED)*
+  - **SDA → GPIO9**  
+  - **SCL → GPI10**
 
 - **Push Buttons**  
-  - **UP → GPIO32**  
-  - **DOWN → GPIO33**  
-  - **SELECT → GPIO25**
+  - **UP → GPIO11**  PIN 13
+  - **DOWN → GPIO12**  PIN 14
+  - **SELECT → GPIO13** PIN 15
 
 
 
