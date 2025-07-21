@@ -20,6 +20,8 @@ The program includes an intuitive **menu** system that allows users to configure
 
 ![circuit](doc/esp.png)
 
+- Although the sensor appears to be mounted on the PCB, it is actually connected to it by wires in order to improve its performance and maneuverability.
+
 ## 🧭 **Menu System**
 
 ```plaintext
