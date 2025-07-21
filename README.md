@@ -156,6 +156,7 @@ This **1.3-inch OLED** display uses the **SH1106** driver and communicates via I
 
 ## Wiring Diagram
 
+
 ## 🔌 Connect Components via I²C (ESP32 Mini)
 
 - **OLED Display (SH1106)**  
