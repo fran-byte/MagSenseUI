@@ -18,7 +18,7 @@ The program includes an intuitive **menu** system that allows users to configure
 | [MLX90393 Sensor](doc/MLX90393.PDF)   | 3-axis magnetometer with adjustable gain        |
 | Push Buttons (x3) | For menu navigation and selection               |
 
-<img src="doc/3d.png" width="75%">
+![circuit](doc/esp.png)
 
 ## 🧭 **Menu System**
 
@@ -164,7 +164,7 @@ Connect components via I2C:
   - DOWN → D3  
   - SELECT → D4  
 
-![circuit](doc/esp.png)
+![diagram](doc/diagram.png)
 
 ## 🚀 **How to Use**
 
