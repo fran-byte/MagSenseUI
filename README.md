@@ -164,7 +164,7 @@ Connect components via I2C:
   - DOWN → D3  
   - SELECT → D4  
 
-![circuit](mg_board.jpg)
+![circuit](doc/esp.png)
 
 ## 🚀 **How to Use**
 
