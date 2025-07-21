@@ -13,7 +13,7 @@ The program includes an intuitive **menu** system that allows users to configure
 
 | Component         | Description                                      |
 |------------------|--------------------------------------------------|
-| [Arduino Nano](doc/nano.pdf)      | Microcontroller (ATmega328P)                    |
+| [Arduino ESP32](doc/esp32.webp)      | Microcontroller ESP32-S3 Super Mini                    |
 | [OLED Display 1.3"](doc/SH1106.pdf) | SH1106-based I2C monochrome display             |
 | [MLX90393 Sensor](doc/MLX90393.PDF)   | 3-axis magnetometer with adjustable gain        |
 | Push Buttons (x3) | For menu navigation and selection               |
@@ -57,22 +57,30 @@ While a traditional compass can detect strong magnetization, it **fails to detec
 
 ## 🔧 Technical Specifications
 
-### 🧠 Arduino Nano
-The **Arduino Nano** is a compact, breadboard-friendly microcontroller board based on the **ATmega328P**. It is ideal for small-scale embedded projects.
+### 🧠 ESP32 Mini  
+The **ESP32 Mini** is a compact, ultra-low-power microcontroller module based on the **ESP32** chip by Espressif. It’s ideal for embedded applications requiring Wi-Fi, Bluetooth, and high processing power in a small footprint.
 
-- **Microcontroller**: ATmega328P
-- **Operating Voltage**: 5V
-- **Input Voltage (recommended)**: 7–12V
-- **Digital I/O Pins**: 14 (6 PWM outputs)
-- **Analog Input Pins**: 8
-- **Flash Memory**: 32 KB (2 KB used by bootloader)
-- **SRAM**: 2 KB
-- **EEPROM**: 1 KB
-- **Clock Speed**: 16 MHz
-- **Communication**: UART, I2C (A4/A5), SPI
-- **USB Interface**: Mini USB (via CH340 or FT232)
+- **Microcontroller**: Dual-core Xtensa LX7 CPU (up to 240 MHz)  
+- **Dimensions**: 22.52 × 18 mm  
+- **Flash Memory**: 4 MB  
+- **SRAM**: 512 KB  
+- **ROM**: 384 KB  
+- **Digital I/O Pins**: 11  
+- **External Interrupt Pins**: 22  
+- **Analog Input Pins**: 6  
+- **PWM Output Pins**: 11  
+- **Operating Voltage (logic and power)**: 3.3V  
+- **Input Voltage (via regulator)**: 5V (e.g., via USB-UART adapter)  
+- **Deep Sleep Current**: ~43 µA  
+- **Connectivity**: Wi-Fi 802.11 b/g/n, Bluetooth v4.2 BR/EDR + BLE  
+- **Security Features**: AES-128/256, RSA, HMAC, digital signatures, secure boot  
+- **Onboard LED**: WS2812 RGB (programmable multicolor status LED)  
+- **Interfaces**: UART, I2C, SPI, PWM, ADC, DAC  
+- **USB Interface**: Not built-in (requires external USB-to-Serial adapter for programming)
 
-<img src="nano.jpg" width="40%">
+
+
+<img src="esp32.avif" width="40%">
 
 ---
 
@@ -105,7 +113,7 @@ I²C is a two-wire communication protocol used to connect microcontrollers with 
 
 I²C uses 2 lines: SDA (data) and SCL (clock)
 
-It works between a master (e.g. Arduino Nano) and one or more slaves (e.g. sensor)
+It works between a master (e.g. Arduino) and one or more slaves (e.g. sensor)
 
 The master:
 
@@ -160,7 +168,7 @@ Connect components via I2C:
 
 ## 🚀 **How to Use**
 
-1. Upload the `MagSenseUI.ino` sketch to your Arduino Nano.
+1. Upload the `MagSenseUI.ino` sketch to your Arduino.
 2. Use the buttons to navigate the OLED menu and select gain levels.
 3. Settings are saved to EEPROM.
 4. Optionally enable Serial Mode to stream real-time magnetic field data (X, Y, Z in µT) to a PC.
