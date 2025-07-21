@@ -121,6 +121,14 @@ Each bit is sent with a clock pulse
 
 Common because it allows multiple devices with just two wires
 
+
+### I²C Clock (SCL)
+
+In I²C, the clock (SCL) is **not a continuous or fixed-frequency signal**. 
+
+It's controlled by the master, may pause, and its timing can vary.  
+SCL acts as a **synchronization signal**, not a typical free-running clock.
+
 ---
 
 ### 🖥️ OLED Display 1.3" (SH1106)
