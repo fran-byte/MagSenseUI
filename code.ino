@@ -1,22 +1,11 @@
 /*
   Project: MagSenseUI
   Author: Fran-Byte
-  Description:
-    MagSenseUI is an interface designed for configuring and monitoring the MLX90393 magnetic sensor.
-    It allows the user to select sensor gain levels via an OLED display and physical buttons.
-    The system can also enter a Serial Mode to stream live magnetic field data (X, Y, Z in microteslas).
-
-    Purpose:
-      Under the influence of a strong magnetic field, the system aims to detect and discriminate
-      small variations or secondary magnetic fields, allowing precise magnetic sensing applications.
-
-    Features:
-      - OLED menu for gain selection
-      - EEPROM-based configuration storage
-      - Serial output mode for live sensor data
-      - Auto timeout to proceed with saved or default configuration
-      
-    Configuration: Arduino Serial Port: Serial 115200
+  Modified for ESP32-S3 Super Mini
+  
+  Pin Configuration:
+    - Buttons: UP(13), DOWN(14), SET(15)
+    - I2C: SDA(11), SCL(12)
 */
 
 #include <Wire.h>
@@ -24,16 +13,16 @@
 #include "Adafruit_MLX90393.h"
 #include <EEPROM.h>
 
-// OLED display configuration
-U8G2_SH1106_128X64_NONAME_1_HW_I2C display(U8G2_R0);
+// OLED display configuration (using specified I2C pins)
+U8G2_SH1106_128X64_NONAME_1_HW_I2C display(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ 12, /* data=*/ 11);
 
 // Magnetic sensor instance
 Adafruit_MLX90393 magneticSensor;
 
-// Button pins
-const int BUTTON_UP = 2;
-const int BUTTON_DOWN = 3;
-const int BUTTON_SELECT = 4;
+// Button pins for ESP32-S3 Super Mini
+const int BUTTON_UP = 13;
+const int BUTTON_DOWN = 14;
+const int BUTTON_SELECT = 15;
 
 // Menu options
 const char* const gainLabels[] = {
@@ -85,6 +74,10 @@ int lastButtonSelectState = HIGH;
 
 void setup() {
   Serial.begin(115200);
+  
+  // Initialize I2C with custom pins
+  Wire.begin(11, 12);
+  
   display.begin();
   display.enableUTF8Print();
 
@@ -95,6 +88,9 @@ void setup() {
   showIntro();
   display.setFont(u8g2_font_ncenB08_tr);
 
+  // Initialize EEPROM for ESP32
+  EEPROM.begin(1); // We only need 1 byte for our configuration
+  
   // Load saved option from EEPROM
   int savedOption = EEPROM.read(0);
   if (savedOption >= 0 && savedOption < TOTAL_OPTIONS) {
@@ -121,10 +117,10 @@ void setup() {
 
 void loop() {
   if (inMenuMode) {
-    handleMenuNavigation();  // Handle user input in the configuration menu
+    handleMenuNavigation(); // Handle user input in the configuration menu
   } else {
-    handleSensorReadings();  // Read sensor and display or send data via serial
-    checkMenuReturn();       // Check if SELECT button pressed to return to menu
+    handleSensorReadings(); // Read sensor and display or send data via serial
+    checkMenuReturn(); // Check if SELECT button pressed to return to menu
   }
 }
 
@@ -244,13 +240,15 @@ void handleMenuNavigation() {
 
   // Select current option
   if (stableButtonSelectState == LOW && lastButtonSelectState == HIGH) {
-    if (currentOption == 8) {  // "Serial ON"
+    if (currentOption == 8) { // "Serial ON"
       serialModeActive = true;
     } else {
       serialModeActive = false;
       EEPROM.write(0, currentOption);
+      EEPROM.commit(); // Required for ESP32 to save to EEPROM
       magneticSensor.setGain(gainValues[currentOption]);
     }
+
     isConfigured = true;
     inMenuMode = false;
     showConfigurationSummary();
