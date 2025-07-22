@@ -1,3 +1,30 @@
+
+/*Project: MagSenseUI
+  Author: Fran-Byte
+  Description:
+    MagSenseUI is an interface designed for configuring and monitoring the MLX90393 magnetic sensor.
+    It allows the user to select sensor gain levels via an OLED display and physical buttons.
+    The system can also enter a Serial Mode to stream live magnetic field data (X, Y, Z in microteslas).
+
+    Purpose:
+      Under the influence of a strong magnetic field, the system aims to detect and discriminate
+      small variations or secondary magnetic fields, allowing precise magnetic sensing applications.
+
+    Features:
+      - OLED menu for gain selection
+      - Configuration storage
+      - Serial output mode for live sensor data
+      - Auto timeout to proceed with saved or default configuration
+    
+      Modified for ESP32-S3 Super Mini
+  
+    Pin Configuration:
+      - Buttons: UP(13), DOWN(14), SET(15)
+      - I2C: SDA(11), SCL(12)
+      
+    Configuration: Arduino Serial Port: Serial 115200
+*/
+
 #include <Wire.h>
 #include <U8g2lib.h>
 #include "Adafruit_MLX90393.h"
