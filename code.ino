@@ -1,51 +1,20 @@
-
-/*Project: MagSenseUI
-  Author: Fran-Byte
-  Description:
-    MagSenseUI is an interface designed for configuring and monitoring the MLX90393 magnetic sensor.
-    It allows the user to select sensor gain levels via an OLED display and physical buttons.
-    The system can also enter a Serial Mode to stream live magnetic field data (X, Y, Z in microteslas).
-
-    Purpose:
-      Under the influence of a strong magnetic field, the system aims to detect and discriminate
-      small variations or secondary magnetic fields, allowing precise magnetic sensing applications.
-
-    Features:
-      - OLED menu for gain selection
-      - Configuration storage
-      - Serial output mode for live sensor data
-      - Auto timeout to proceed with saved or default configuration
-    
-      Modified for ESP32-S3 Super Mini
-  
-    Pin Configuration:
-      - Buttons: UP(13), DOWN(14), SET(15)
-      - I2C: SDA(11), SCL(12)
-      
-    Configuration: Arduino Serial Port: Serial 115200
-*/
-
-
 #include <Wire.h>
 #include <U8g2lib.h>
 #include "Adafruit_MLX90393.h"
 #include <EEPROM.h>
 
-// OLED display configuration (using specified I2C pins)
-U8G2_SH1106_128X64_NONAME_1_HW_I2C display(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ 12, /* data=*/ 11);
-
-// Magnetic sensor instance
+U8G2_SH1106_128X64_NONAME_1_HW_I2C display(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ 10, /* data=*/ 9);
 Adafruit_MLX90393 magneticSensor;
 
-// Button pins for ESP32-S3 Super Mini
-const int BUTTON_UP = 10;
-const int BUTTON_DOWN = 11;
-const int BUTTON_SELECT = 12;
+// Button pins
+const int BUTTON_UP = 5;
+const int BUTTON_DOWN = 6;
+const int BUTTON_SELECT = 7;
 
-// Menu options
+// Menu configuration
 const char* const gainLabels[] = {
-  "1X", "1.33X", "1.67X", "2X", "2.5X",
-  "3X", "4X", "5X", "Serial ON"
+  "Gain: 1X", "Gain: 1.33X", "Gain: 1.67X", "Gain: 2X", "Gain: 2.5X",
+  "Gain: 3X", "Gain: 4X", "Gain: 5X", "Serial ON"
 };
 const mlx90393_gain gainValues[] = {
   MLX90393_GAIN_1X, MLX90393_GAIN_1_33X, MLX90393_GAIN_1_67X,
@@ -55,47 +24,41 @@ const mlx90393_gain gainValues[] = {
 const int TOTAL_OPTIONS = 9;
 const int visibleMenuOptions = 5;
 
-// Menu state variables
+// System state
 int currentOption = 0;
 int menuScrollOffset = 0;
 bool isConfigured = false;
 bool serialModeActive = false;
 bool inMenuMode = true;
 
-// Timing control
+// Timing
 unsigned long menuStartTime = 0;
-const unsigned long MENU_TIMEOUT = 5000; // 5s timeout
+const unsigned long MENU_TIMEOUT = 5000;
 unsigned long lastMeasurementTime = 0;
 const unsigned long MEASUREMENT_INTERVAL = 500;
 
-// Sensor reading variables
+// Sensor data
 float magX, magY, magZ;
 bool readSuccess = false;
 
-// Debounce variables for buttons
+// Button debounce
 unsigned long lastDebounceTimeUp = 0;
 unsigned long lastDebounceTimeDown = 0;
 unsigned long lastDebounceTimeSelect = 0;
 const unsigned long debounceDelay = 50;
-
 int stableButtonUpState = HIGH;
 int stableButtonDownState = HIGH;
 int stableButtonSelectState = HIGH;
-
 int lastReadingUp = HIGH;
 int lastReadingDown = HIGH;
 int lastReadingSelect = HIGH;
-
 int lastButtonUpState = HIGH;
 int lastButtonDownState = HIGH;
 int lastButtonSelectState = HIGH;
 
 void setup() {
   Serial.begin(115200);
-  
-  // Initialize I2C with custom pins
   Wire.begin(9, 10);
-  
   display.begin();
   display.enableUTF8Print();
 
@@ -106,10 +69,7 @@ void setup() {
   showIntro();
   display.setFont(u8g2_font_ncenB08_tr);
 
-  // Initialize EEPROM for ESP32
-  EEPROM.begin(1); // We only need 1 byte for our configuration
-  
-  // Load saved option from EEPROM
+  EEPROM.begin(1);
   int savedOption = EEPROM.read(0);
   if (savedOption >= 0 && savedOption < TOTAL_OPTIONS) {
     currentOption = savedOption;
@@ -121,7 +81,6 @@ void setup() {
     while(1);
   }
 
-  // Configure sensor resolutions, oversampling and filter
   magneticSensor.setResolution(MLX90393_X, MLX90393_RES_17);
   magneticSensor.setResolution(MLX90393_Y, MLX90393_RES_17);
   magneticSensor.setResolution(MLX90393_Z, MLX90393_RES_17);
@@ -135,14 +94,13 @@ void setup() {
 
 void loop() {
   if (inMenuMode) {
-    handleMenuNavigation(); // Handle user input in the configuration menu
+    handleMenuNavigation();
   } else {
-    handleSensorReadings(); // Read sensor and display or send data via serial
-    checkMenuReturn(); // Check if SELECT button pressed to return to menu
+    handleSensorReadings();
+    checkMenuReturn();
   }
 }
 
-// Display introductory splash screen
 void showIntro() {
   display.firstPage();
   do {
@@ -152,7 +110,6 @@ void showIntro() {
   delay(1000);
 }
 
-// Display error message and halt program
 void showErrorMessage(const char* msg) {
   display.firstPage();
   do {
@@ -162,7 +119,6 @@ void showErrorMessage(const char* msg) {
   while(1);
 }
 
-// Adjust the menu scroll to keep current option visible
 void adjustScroll() {
   if (currentOption < menuScrollOffset) {
     menuScrollOffset = currentOption;
@@ -171,7 +127,6 @@ void adjustScroll() {
   }
 }
 
-// Draw the configuration menu on the display
 void showConfigurationMenu() {
   display.firstPage();
   do {
@@ -189,7 +144,6 @@ void showConfigurationMenu() {
   } while(display.nextPage());
 }
 
-// Show a summary of the chosen configuration before starting measurement
 void showConfigurationSummary() {
   display.firstPage();
   do {
@@ -202,37 +156,30 @@ void showConfigurationSummary() {
       display.setCursor(8, 45);
       display.print("Display: OFF");
     } else {
-      display.print("Gain: ");
       display.print(gainLabels[currentOption]);
     }
   } while(display.nextPage());
   delay(2000);
 }
 
-// Read and debounce the button states
 void readButtons() {
   unsigned long currentTime = millis();
-
-  // UP button debounce
   int readingUp = digitalRead(BUTTON_UP);
   if (readingUp != lastReadingUp) lastDebounceTimeUp = currentTime;
   if ((currentTime - lastDebounceTimeUp) > debounceDelay) stableButtonUpState = readingUp;
   lastReadingUp = readingUp;
 
-  // DOWN button debounce
   int readingDown = digitalRead(BUTTON_DOWN);
   if (readingDown != lastReadingDown) lastDebounceTimeDown = currentTime;
   if ((currentTime - lastDebounceTimeDown) > debounceDelay) stableButtonDownState = readingDown;
   lastReadingDown = readingDown;
 
-  // SELECT button debounce
   int readingSelect = digitalRead(BUTTON_SELECT);
   if (readingSelect != lastReadingSelect) lastDebounceTimeSelect = currentTime;
   if ((currentTime - lastDebounceTimeSelect) > debounceDelay) stableButtonSelectState = readingSelect;
   lastReadingSelect = readingSelect;
 }
 
-// Handle navigation and selection inside the configuration menu
 void handleMenuNavigation() {
   static bool needsRedraw = true;
   bool buttonPressed = false;
@@ -240,7 +187,6 @@ void handleMenuNavigation() {
 
   readButtons();
 
-  // Navigate up in menu
   if (stableButtonUpState == LOW && lastButtonUpState == HIGH) {
     currentOption = (currentOption == 0) ? TOTAL_OPTIONS - 1 : currentOption - 1;
     adjustScroll();
@@ -248,7 +194,6 @@ void handleMenuNavigation() {
     menuStartTime = currentTime;
   }
 
-  // Navigate down in menu
   if (stableButtonDownState == LOW && lastButtonDownState == HIGH) {
     currentOption = (currentOption + 1) % TOTAL_OPTIONS;
     adjustScroll();
@@ -256,14 +201,13 @@ void handleMenuNavigation() {
     menuStartTime = currentTime;
   }
 
-  // Select current option
   if (stableButtonSelectState == LOW && lastButtonSelectState == HIGH) {
-    if (currentOption == 8) { // "Serial ON"
+    if (currentOption == 8) {
       serialModeActive = true;
     } else {
       serialModeActive = false;
       EEPROM.write(0, currentOption);
-      EEPROM.commit(); // Required for ESP32 to save to EEPROM
+      EEPROM.commit();
       magneticSensor.setGain(gainValues[currentOption]);
     }
 
@@ -277,7 +221,6 @@ void handleMenuNavigation() {
   lastButtonDownState = stableButtonDownState;
   lastButtonSelectState = stableButtonSelectState;
 
-  // Exit menu automatically after timeout
   if (currentTime - menuStartTime > MENU_TIMEOUT) {
     isConfigured = true;
     inMenuMode = false;
@@ -285,14 +228,12 @@ void handleMenuNavigation() {
     return;
   }
 
-  // Redraw menu if needed
   if (buttonPressed || needsRedraw) {
     showConfigurationMenu();
     needsRedraw = false;
   }
 }
 
-// Check if SELECT button is pressed to return to menu during measurement
 void checkMenuReturn() {
   int reading = digitalRead(BUTTON_SELECT);
   if (reading != lastButtonSelectState) {
@@ -309,14 +250,40 @@ void checkMenuReturn() {
   lastButtonSelectState = reading;
 }
 
-// Return to configuration menu from measurement mode
 void returnToMenu() {
   inMenuMode = true;
   menuStartTime = millis();
   showConfigurationMenu();
 }
 
-// Read sensor data and display or send via serial
+void formatFixedWidthNumber(int x, int y, float value) {
+  char buffer[10];
+  
+  // Format with exactly 5 characters (sign + 4 digits or space + 4 digits)
+  if (value >= 0) {
+    snprintf(buffer, sizeof(buffer), "%5.0f", value); // Space padding for positive numbers
+  } else {
+    snprintf(buffer, sizeof(buffer), "%5.0f", value); // Negative sign takes one position
+  }
+  
+  display.setCursor(x, y);
+  display.print(buffer);
+}
+
+int calculateBars(float delta) {
+  if (delta >= 200) return 6;
+  if (delta >= 100) return 4;
+  if (delta >= 50) return 2;
+  if (delta >= 25) return 1;
+  return 0;
+}
+
+void drawVumeter(int x, int y, int bars) {
+  for (int i = 0; i < bars; i++) {
+    display.drawBox(x + (i * 4), y, 3, 8);
+  }
+}
+
 void handleSensorReadings() {
   static float prevX = 0, prevY = 0, prevZ = 0;
   unsigned long now = millis();
@@ -337,19 +304,37 @@ void handleSensorReadings() {
         display.setFont(u8g2_font_ncenB08_tr);
         display.drawFrame(0, 0, 128, 64);
         if (readSuccess) {
-          // Mark large changes with '>'
-          char markX = abs(magX - prevX) > 25 ? '>' : ' ';
-          char markY = abs(magY - prevY) > 25 ? '>' : ' ';
-          char markZ = abs(magZ - prevZ) > 25 ? '>' : ' ';
+          float deltaX = abs(magX - prevX);
+          float deltaY = abs(magY - prevY);
+          float deltaZ = abs(magZ - prevZ);
+          
+          int barsX = calculateBars(deltaX);
+          int barsY = calculateBars(deltaY);
+          int barsZ = calculateBars(deltaZ);
 
+          // X axis (fixed width display)
           display.setCursor(12, 15);
-          display.print("X: "); display.print(magX, 1); display.print(" uT "); display.print(markX);
+          display.print("X:");
+          formatFixedWidthNumber(22, 15, magX);
+          display.print(" uT  ");
+          drawVumeter(76, 8, barsX);
+          
+          // Y axis (fixed width display)
           display.setCursor(12, 30);
-          display.print("Y: "); display.print(magY, 1); display.print(" uT "); display.print(markY);
+          display.print("Y:");
+          formatFixedWidthNumber(22, 30, magY);
+          display.print(" uT  ");
+          drawVumeter(76, 23, barsY);
+          
+          // Z axis (fixed width display)
           display.setCursor(12, 45);
-          display.print("Z: "); display.print(magZ, 1); display.print(" uT "); display.print(markZ);
+          display.print("Z:");
+          formatFixedWidthNumber(22, 45, magZ);
+          display.print(" uT  ");
+          drawVumeter(76, 38, barsZ);
+          
+          // Gain setting
           display.setCursor(12, 60);
-          display.print("Gain: ");
           display.print(gainLabels[currentOption]);
         } else {
           display.setCursor(10, 30);
