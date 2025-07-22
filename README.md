@@ -18,7 +18,9 @@ The program includes an intuitive **menu** system that allows users to configure
 | [MLX90393 Sensor](doc/MLX90393.PDF)   | 3-axis magnetometer with adjustable gain        |
 | Push Buttons (x3) | For menu navigation and selection               |
 
-![circuit](doc/esp.png)
+
+
+<img src="doc/esp.png" width="80%">
 
 - Although the sensor appears to be mounted on the PCB, it is actually connected to it by wires in order to improve its performance and maneuverability.
 
