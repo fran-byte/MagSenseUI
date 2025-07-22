@@ -91,6 +91,9 @@ The **ESP32 Mini** is a compact, ultra-low-power microcontroller module based on
 ### 🧲 MLX90393 Magnetic Sensor
 The **MLX90393** is a highly sensitive 3-axis magnetometer designed for precision magnetic field sensing.
 
+
+The MLX90393 features a wide dynamic range and programmable gain, allowing it to detect very small magnetic fields without being affected by saturation, even in environments with strong magnetic sources such as neodymium magnets.
+
 - **Measurement Axes**: X, Y, Z
 - **Output**: Magnetic field in microteslas (µT)
 - **Resolution**: Configurable (up to 0.161 µT/LSB)
