@@ -22,7 +22,10 @@ The program includes an intuitive **menu** system that allows users to configure
 
 <img src="doc/x.jpg" width="80%">
 
-![diagram](doc/scheme.png)
+![diagram](doc/scheme0.png)
+
+![diagram](doc/scheme1.png)
+
 
 - Although the sensor appears to be mounted on the PCB, it is actually connected to it by wires in order to improve its performance and maneuverability.
 
