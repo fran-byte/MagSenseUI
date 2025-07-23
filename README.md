@@ -22,7 +22,7 @@ The program includes an intuitive **menu** system that allows users to configure
 
 
 
-![diagram](doc/scheme.png)
+![diagram](doc/x.png)
 
 ![diagram](doc/scheme0.png)
 
