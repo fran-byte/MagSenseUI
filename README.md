@@ -20,7 +20,9 @@ The program includes an intuitive **menu** system that allows users to configure
 
 
 
-<img src="doc/x.jpg" width="80%">
+
+
+![diagram](doc/scheme.png)
 
 ![diagram](doc/scheme0.png)
 
