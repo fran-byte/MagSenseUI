@@ -169,6 +169,8 @@ This **1.3-inch OLED** display uses the **SH1106** driver and communicates via I
 
 <img src="oled.jpg" width="30%">
 
+### These images correspond to Version 2. The only addition is extra GPIO inputs/outputs, which I might use for other projects. However, the circuit and the program remain the same as in Version 1.
+
 <img src="doc/1.jpg" width="70%">
 <img src="doc/2.jpg" width="80%">
 <img src="doc/3.jpg" width="70%">
