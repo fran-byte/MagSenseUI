@@ -205,7 +205,7 @@ This **1.3-inch OLED** display uses the **SH1106** driver and communicates via I
 3. Settings are saved to EEPROM.
 4. Optionally enable Serial Mode to stream real-time magnetic field data (X, Y, Z in µT) to a PC.
 
-📂 **Code**: [View Source Code](code.ino)
+📂 **Code**: [View Source Code](magSenseUi/)
 
 ## 📄 License
 
