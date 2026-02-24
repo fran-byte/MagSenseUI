@@ -34,20 +34,19 @@ void loop()
     }
     else
     {
-        ButtonHandler::update(); // NECESARIO para detectar pulsaciones fuera del menú
+        ButtonHandler::update(); // Required to detect button presses outside the menu
 
         SensorManager::update();
 
-        // Dibujar pantalla de datos del sensor en cada iteración
+        // Render sensor data screen on every iteration
         if (!SensorManager::isSerialModeActive())
         {
             DisplayUtils::showSensorData(
-                SensorManager::getX(),     SensorManager::getY(),     SensorManager::getZ(),
+                SensorManager::getX(), SensorManager::getY(), SensorManager::getZ(),
                 SensorManager::getPrevX(), SensorManager::getPrevY(), SensorManager::getPrevZ(),
                 SensorManager::getReadSuccess(),
                 SensorManager::getCurrentGainIndex(),
-                MenuManager::getGainLabels()
-            );
+                MenuManager::getGainLabels());
         }
 
         if (ButtonHandler::wasSelectPressed())

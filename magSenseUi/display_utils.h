@@ -24,47 +24,57 @@ public:
                                const char *const labels[]);
 };
 
-// Inicialización del display estático
+// Static display initialization
 U8G2_SH1106_128X64_NONAME_1_HW_I2C DisplayUtils::display(U8G2_R0, /* reset=*/U8X8_PIN_NONE, /* clock=*/10, /* data=*/9);
 
-// Implementaciones
-void DisplayUtils::begin() {
+// Implementations
+void DisplayUtils::begin()
+{
     display.begin();
     display.enableUTF8Print();
 }
 
-void DisplayUtils::showIntro() {
+void DisplayUtils::showIntro()
+{
     display.firstPage();
-    do {
+    do
+    {
         display.setFont(u8g2_font_logisoso20_tr);
         display.drawStr(4, 40, "Fran-Byte");
     } while (display.nextPage());
     delay(1000);
 }
 
-void DisplayUtils::showErrorMessage(const char *msg) {
+void DisplayUtils::showErrorMessage(const char *msg)
+{
     display.firstPage();
-    do {
+    do
+    {
         display.setFont(u8g2_font_ncenB08_tr);
         display.drawStr(5, 30, msg);
     } while (display.nextPage());
 }
 
 void DisplayUtils::showMenu(const char *const labels[], int totalOptions,
-                           int currentOption, int scrollOffset) {
+                            int currentOption, int scrollOffset)
+{
     const int visibleMenuOptions = 5;
-    
+
     display.firstPage();
-    do {
+    do
+    {
         display.setFont(u8g2_font_ncenB08_tr);
         display.drawFrame(0, 0, 128, 64);
         display.drawStr(8, 10, "Select option:");
-        
-        for (int i = 0; i < visibleMenuOptions; i++) {
+
+        for (int i = 0; i < visibleMenuOptions; i++)
+        {
             int idx = scrollOffset + i;
-            if (idx >= totalOptions) break;
+            if (idx >= totalOptions)
+                break;
             int y = 20 + i * 10;
-            if (idx == currentOption) display.drawStr(0, y, ">");
+            if (idx == currentOption)
+                display.drawStr(0, y, ">");
             display.setCursor(10, y);
             display.print(labels[idx]);
         }
@@ -72,18 +82,23 @@ void DisplayUtils::showMenu(const char *const labels[], int totalOptions,
 }
 
 void DisplayUtils::showSummary(bool serialModeActive, int currentOption,
-                              const char *const labels[]) {
+                               const char *const labels[])
+{
     display.firstPage();
-    do {
+    do
+    {
         display.setFont(u8g2_font_ncenB08_tr);
         display.setCursor(8, 15);
         display.print("Configuration:");
         display.setCursor(8, 30);
-        if (serialModeActive) {
+        if (serialModeActive)
+        {
             display.print("Serial: ON");
             display.setCursor(8, 45);
             display.print("Display: OFF");
-        } else {
+        }
+        else
+        {
             display.print(labels[currentOption]);
         }
     } while (display.nextPage());
@@ -91,47 +106,61 @@ void DisplayUtils::showSummary(bool serialModeActive, int currentOption,
 }
 
 void DisplayUtils::showSensorData(float magX, float magY, float magZ,
-                                 float prevX, float prevY, float prevZ,
-                                 bool readSuccess, int currentOption,
-                                 const char *const labels[]) {
+                                  float prevX, float prevY, float prevZ,
+                                  bool readSuccess, int currentOption,
+                                  const char *const labels[])
+{
     display.firstPage();
-    do {
+    do
+    {
         display.setFont(u8g2_font_ncenB08_tr);
         display.drawFrame(0, 0, 128, 64);
-        
-        if (readSuccess) {
-            // Escala lineal: 6 barras = 125 uT, cada barra ~21 uT
-            auto calculateBars = [](float delta) -> int {
-                if (delta <= 0) return 0;
+
+        if (readSuccess)
+        {
+            // Linear scale: 6 bars = 125 uT, each bar ~21 uT
+            auto calculateBars = [](float delta) -> int
+            {
+                if (delta <= 0)
+                    return 0;
                 int bars = (int)(delta / 21.0f);
-                if (bars > 6) bars = 6;
+                if (bars > 6)
+                    bars = 6;
                 return bars;
             };
 
-            // Vúmetro con marcos vacíos de fondo (escala fija) y relleno proporcional
-            auto drawVumeter = [&](int x, int y, int bars) {
-                for (int i = 0; i < 6; i++) {
+            // VU meter with empty frames as background scale and proportional fill
+            auto drawVumeter = [&](int x, int y, int bars)
+            {
+                for (int i = 0; i < 6; i++)
+                {
                     int bx = x + (i * 5);
                     display.drawFrame(bx, y, 4, 8);
-                    if (i < bars) {
+                    if (i < bars)
+                    {
                         display.drawBox(bx, y, 4, 8);
                     }
                 }
             };
 
-            auto formatFixedWidthNumber = [&](int x, int y, float value) {
+            auto formatFixedWidthNumber = [&](int x, int y, float value)
+            {
                 char buffer[10];
                 snprintf(buffer, sizeof(buffer), "%5.0f", value);
                 display.setCursor(x, y);
                 display.print(buffer);
             };
 
-            // Dibuja vúmetro completo + símbolo de alerta si supera umbral
-            auto drawVumeterWithAlert = [&](int x, int y, float delta, int bars) {
+            // Draws full VU meter + alert symbol if threshold is exceeded
+            auto drawVumeterWithAlert = [&](int x, int y, float delta, int bars)
+            {
                 drawVumeter(x, y, bars);
-                if (delta > 175) {
+                if (delta > 175)
+                {
                     AlertSymbols::drawRadiation(display, x + 32, y);
-                } else if (delta > 125) {
+                }
+                else if (delta > 125)
+                {
                     AlertSymbols::drawWarning(display, x + 32, y);
                 }
             };
@@ -168,7 +197,9 @@ void DisplayUtils::showSensorData(float magX, float magY, float magZ,
             // Gain setting
             display.setCursor(12, 60);
             display.print(labels[currentOption]);
-        } else {
+        }
+        else
+        {
             display.setCursor(10, 30);
             display.print("Read error");
         }
