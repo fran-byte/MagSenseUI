@@ -21,9 +21,9 @@ public:
     static void drawWarning(U8G2 &display, int x, int y)
     {
         // Vertical line of !
-        display.drawBox(x, y, 3, 5);
+        display.drawBox(x + 4, y, 3, 5);
         // Dot of !
-        display.drawBox(x, y + 6, 3, 2);
+        display.drawBox(x + 4, y + 6, 3, 2);
     }
 
     // Simplified radiation symbol (11x8 px)
