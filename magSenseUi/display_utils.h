@@ -4,6 +4,7 @@
 #include <U8g2lib.h>
 #include <Wire.h>
 #include <alert_symbols.h>
+#include <iman_bitmap.h>
 
 class DisplayUtils
 {
@@ -13,6 +14,7 @@ private:
 public:
     static void begin();
     static void showIntro();
+    static void showMagnetic();
     static void showErrorMessage(const char *msg);
     static void showMenu(const char *const labels[], int totalOptions,
                          int currentOption, int scrollOffset);
@@ -44,6 +46,26 @@ void DisplayUtils::showIntro()
     } while (display.nextPage());
     delay(1000);
 }
+
+
+
+// 'display' debe ser tu instancia U8G2, p. ej.: U8G2_SH1106_128X64_NONAME_F_SW_I2C display(...);
+
+
+
+
+
+void DisplayUtils::showMagnetic() {
+    display.firstPage();
+    do {
+        display.drawXBMP(0, 0, IMAN128F_WIDTH, IMAN128F_HEIGHT, imanAscii128x64_fixed);
+    } while (display.nextPage());
+    delay(3000);
+}
+
+
+
+
 
 void DisplayUtils::showErrorMessage(const char *msg)
 {
