@@ -23,6 +23,7 @@ void setup()
     MenuManager::begin();
 
     DisplayUtils::showIntro();
+    DisplayUtils::showMagnetic();
     MenuManager::enterMenuMode();
 }
 
