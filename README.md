@@ -3,6 +3,8 @@
 # MagSenseUI
 # Diagnostic Interface for Magnetic Sensor Calibration in Electromechanical Systems
 
+![magsense](magsense.png)
+
 ## 🎯 Project Purpose
 
 The **MagSenseUI** project was developed to address a specific diagnostic challenge in electromechanical systems—particularly in machines like **Bill Validators** that rely on magnetic sensors for operation.
