@@ -72,6 +72,8 @@ void DisplayUtils::showMagnetic()
 }
 
 
+
+
 void DisplayUtils::showErrorMessage(const char *msg)
 {
     display.firstPage();
@@ -82,8 +84,10 @@ void DisplayUtils::showErrorMessage(const char *msg)
     } while (display.nextPage());
 }
 
-void DisplayUtils::showMenu(const char *const labels[], int totalOptions,
-                            int currentOption, int scrollOffset)
+void DisplayUtils::showMenu(const char *const labels[],
+                            int totalOptions,
+                            int currentOption,
+                            int scrollOffset)
 {
     const int visibleMenuOptions = 5;
 
@@ -91,20 +95,52 @@ void DisplayUtils::showMenu(const char *const labels[], int totalOptions,
     do
     {
         display.setFont(u8g2_font_ncenB08_tr);
-        display.drawFrame(0, 0, 128, 64);
-        display.drawStr(8, 10, "Select option:");
 
+        // Marco exterior
+        display.drawFrame(0, 0, 128, 64);
+
+        // Cabecera invertida
+        display.drawBox(1, 1, 126, 12);
+        display.setDrawColor(0);
+        display.drawStr(28, 10, "MagSenseUI");
+        display.setDrawColor(1);
+
+        // Opciones
         for (int i = 0; i < visibleMenuOptions; i++)
         {
             int idx = scrollOffset + i;
+
             if (idx >= totalOptions)
                 break;
-            int y = 20 + i * 10;
+
+            int y = 22 + (i * 10);
+
             if (idx == currentOption)
-                display.drawStr(0, y, ">");
-            display.setCursor(10, y);
-            display.print(labels[idx]);
+            {
+                // Línea seleccionada en negativo
+                display.drawBox(2, y - 8, 124, 10);
+
+                display.setDrawColor(0);
+
+                display.setCursor(6, y);
+                display.print("> ");
+                display.print(labels[idx]);
+
+                display.setDrawColor(1);
+            }
+            else
+            {
+                display.setCursor(6, y);
+                display.print(labels[idx]);
+            }
         }
+
+        // Instrucciones inferiores
+        //display.drawHLine(1, 52, 126);
+        //display.setFont(u8g2_font_4x6_tr);
+        //display.drawStr(4, 60, "UP/DOWN: Navigate");
+        //display.drawStr(78, 60, "SET: OK");
+
     } while (display.nextPage());
 }
 
