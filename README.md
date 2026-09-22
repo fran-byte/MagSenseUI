@@ -197,8 +197,6 @@ This **1.3-inch OLED** display uses the **SH1106** driver and communicates via I
   - **SELECT → GPIO7** PIN 9
 
 
-[![Ver video](dic/video.jpg)](doc/video.mp4)
-
 
 ## 🚀 **How to Use**
 
