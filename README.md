@@ -57,7 +57,7 @@ The program includes an intuitive **menu** system that allows users to configure
 
 These machines often operate in environments where **strong neodymium magnets** are permanently present. While these magnets are essential to the machine’s function, they also create a **constant magnetic field** that can interfere with nearby components.
 
-One such component is the **metallic bearing**. Under normal conditions, the bearing is non-magnetic. However, if it becomes **magnetized due to external contamination** (e.g., exposure to magnetic particles or prolonged proximity to strong fields), it can **distort the local magnetic environment**. This distortion may lead to **false readings or operational errors** in the machine’s magnetic sensors.
+One such component is the metallic bearing. Under normal conditions, the bearing is non-magnetic. However, if it becomes magnetized due to external contamination (e.g., exposure to magnetic particles or prolonged proximity to strong fields), it can distort the local magnetic environment. This distortion may lead to false readings or operational errors in the machine’s magnetic sensors.
 
 ### 🧪 Why MagSenseUI?
 
