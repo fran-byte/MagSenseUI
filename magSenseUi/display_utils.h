@@ -55,16 +55,21 @@ void DisplayUtils::showIntro()
 
 
 
-void DisplayUtils::showMagnetic() {
+void DisplayUtils::showMagnetic()
+{
     display.firstPage();
-    do {
-        display.drawXBMP(0, 0, IMAN128F_WIDTH, IMAN128F_HEIGHT, imanAscii128x64_fixed);
+    do
+    {
+        display.drawXBMP(
+            32, 0,
+            IMAN128F_WIDTH,
+            IMAN128F_HEIGHT,
+            imanAscii128x64_fixed
+        );
     } while (display.nextPage());
+
     delay(3000);
 }
-
-
-
 
 
 void DisplayUtils::showErrorMessage(const char *msg)
