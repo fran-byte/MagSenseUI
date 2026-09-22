@@ -39,8 +39,16 @@ public:
 
 // Static constant definitions
 const char *MenuManager::gainLabels[9] = {
-    "Gain: 1X", "Gain: 1.33X", "Gain: 1.67X", "Gain: 2X", "Gain: 2.5X",
-    "Gain: 3X", "Gain: 4X", "Gain: 5X", "Serial ON"};
+    "Gain 1X",
+    "Gain 1.33X",
+    "Gain 1.67X",
+    "Gain 2X",
+    "Gain 2.5X",
+    "Gain 3X",
+    "Gain 4X",
+    "Gain 5X",
+    "Serial ON"
+};
 
 const mlx90393_gain MenuManager::gainValues[8] = {
     MLX90393_GAIN_1X, MLX90393_GAIN_1_33X, MLX90393_GAIN_1_67X,
