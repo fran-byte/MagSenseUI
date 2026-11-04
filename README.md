@@ -80,6 +80,15 @@ While a traditional compass can detect strong magnetization, it **fails to detec
 
 ---
 
+## Additional Resources
+
+For readers unfamiliar with the technologies used in this project, detailed background information is available here:
+
+- [I²C Communication Basics](doc/resources.md#i2c)
+- [I²C Clock (SCL)](doc/resources.md#i2c-clock)
+- [MLX90393 Datasheet](doc/MLX90393.PDF)
+- [SH1106 Display Datasheet](doc/SH1106.pdf)
+
 ## 🔧 Technical Specifications
 
 ### 🧠 ESP32 Mini  
