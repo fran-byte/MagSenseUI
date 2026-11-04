@@ -143,36 +143,6 @@ The MLX90393 provides a maximum resolution of approximately 0.161 µT/LSB. Measu
 
 <img src="mlx90393.jpg" width="50%">
 
-### I2C (Inter-Integrated Circuit)
-
-I²C is a two-wire communication protocol used to connect microcontrollers with peripheral devices like sensors, displays, and EEPROMs.
-
-
-I²C uses 2 lines: SDA (data) and SCL (clock)
-
-It works between a master (e.g. Arduino) and one or more slaves (e.g. sensor)
-
-The master:
-
-1. Starts the communication
-
-2. Sends the slave’s address
-
-3. Sends or requests data
-
-4. Ends the communication
-
-Each bit is sent with a clock pulse
-
-Common because it allows multiple devices with just two wires
-
-
-### I²C Clock (SCL)
-
-In I²C, the clock (SCL) is **not a continuous or fixed-frequency signal**. 
-
-It's controlled by the master, may pause, and its timing can vary.  
-SCL acts as a **synchronization signal**, not a typical free-running clock.
 
 ---
 
