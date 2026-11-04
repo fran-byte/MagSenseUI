@@ -11,6 +11,16 @@ The **MagSenseUI** project was developed to address a specific diagnostic challe
 
 The program includes an intuitive **menu** system that allows users to configure the **sensor gain** and choose the data output mode. Users can select whether the magnetic field readings are displayed directly on the OLED screen or streamed via the Arduino's **serial port** to a connected PC. This flexibility makes it easy to adapt the system for both standalone field diagnostics and detailed data logging or analysis on a computer.
 
+## Features
+
+- Real-time 3-axis magnetic field monitoring
+- Configurable MLX90393 gain levels
+- OLED user interface
+- EEPROM configuration storage
+- Serial streaming for PC logging
+- Portable diagnostic operation
+- Detection of residual bearing magnetization
+
 ## 🧰 **Hardware Components**
 
 | Component         | Description                                      |
@@ -171,7 +181,7 @@ This **1.3-inch OLED** display uses the **SH1106** driver and communicates via I
 
 <img src="oled.jpg" width="30%">
 
-### These images correspond to Version 2. The only addition is extra GPIO inputs/outputs, which I might use for other projects. However, the circuit and the program remain the same as in Version 1.
+### The only difference is the addition of extra GPIO pins reserved for future expansion. The firmware and sensing circuitry remain identical to Version 1.
 
 <img src="doc/video.png" width="70%">
 <img src="doc/sensando.png" width="70%">
@@ -190,7 +200,7 @@ This **1.3-inch OLED** display uses the **SH1106** driver and communicates via I
 
 - **MLX90393 Sensor**  
   - **SDA → GPIO9**  PIN 11
-  - **SCL → GPI10**  PIN 12
+  - **SCL → GPIO10**  PIN 12
 
 - **Push Buttons**  
   - **UP → GPIO5**  PIN 7
@@ -234,6 +244,16 @@ Each axis includes a six-segment bar graph that represents the magnitude of the 
 - 6 bars: Variation greater than approximately 125 µT.
 - Warning symbol (`!`): Variation above 125 µT.
 - Magnetized symbol (`M`): Variation above 175 µT.
+
+## Validation Results
+
+Test Object                 Max Δ (µT)     Status
+--------------------------------------------------
+Reference Bearing           32             Normal
+Bearing A                   94             Normal
+Bearing B                  143             Warning
+Bearing C                  221             Magnetized
+
 
 📂 **Code**: [View Source Code](magSenseUi/)
 
