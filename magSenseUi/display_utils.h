@@ -198,10 +198,10 @@ void DisplayUtils::showSensorData(float magX, float magY, float magZ,
                 for (int i = 0; i < 6; i++)
                 {
                     int bx = x + (i * 5);
-                    display.drawFrame(bx, y, 4, 8);
+                    display.drawFrame(bx, y, 5, 10);
                     if (i < bars)
                     {
-                        display.drawBox(bx, y, 4, 8);
+                        display.drawBox(bx, y, 5, 10);
                     }
                 }
             };
