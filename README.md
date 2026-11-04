@@ -1,7 +1,7 @@
 
 
 # MagSenseUI
-# Diagnostic Interface for Magnetic Sensor Calibration in Electromechanical Systems
+# Diagnostic Tool for Residual Magnetization Detection
 
 ![magsense](magsense.png)
 
