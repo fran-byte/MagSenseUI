@@ -247,13 +247,12 @@ Each axis includes a six-segment bar graph that represents the magnitude of the 
 
 ## Validation Results
 
-Test Object                 Max Δ (µT)     Status
---------------------------------------------------
-Reference Bearing           32             Normal
-Bearing A                   94             Normal
-Bearing B                  143             Warning
-Bearing C                  221             Magnetized
-
+| Test Object | Max Δ (µT) | Status |
+|------------|-----------:|---------|
+| Reference Bearing | 32 | Normal |
+| Bearing A | 94 | Normal |
+| Bearing B | 143 | Warning |
+| Bearing C | 221 | Magnetized |
 
 📂 **Code**: [View Source Code](magSenseUi/)
 
