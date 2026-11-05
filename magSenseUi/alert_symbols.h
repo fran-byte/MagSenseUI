@@ -20,10 +20,15 @@ public:
     template <typename U8G2>
     static void drawWarning(U8G2 &display, int x, int y)
     {
-        // Vertical line of !
-        display.drawBox(x + 4, y, 3, 5);
-        // Dot of !
-        display.drawBox(x + 4, y + 6, 3, 2);
+        // Triángulo
+        display.drawLine(x + 4, y,     x,     y + 7);
+        display.drawLine(x + 4, y,     x + 8, y + 7);
+        display.drawLine(x,     y + 7, x + 8, y + 7);
+    
+        // Exclamación dentro
+        display.drawPixel(x + 4, y + 2);
+        display.drawPixel(x + 4, y + 3);
+        display.drawPixel(x + 4, y + 5);
     }
 
     // Simplified radiation symbol (11x8 px)
