@@ -258,7 +258,6 @@ void DisplayUtils::showSensorData(float magX, float magY, float magZ,
             display.print(" uT");
             drawVumeterWithAlert(76, 38, deltaZ, calculateBars(deltaZ));
 
-            // --- Línea diagnóstico (sustituye a la ganancia) ---
             // Símbolo Δ dibujado (7x6 px), base en y=60
             display.drawLine(15, 54, 12, 60);
             display.drawLine(15, 54, 18, 60);
