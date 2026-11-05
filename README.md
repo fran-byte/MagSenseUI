@@ -34,7 +34,7 @@ The program includes an intuitive **menu** system that allows users to configure
 
 
 
-![diagram](doc/x.png)
+![diagram](doc/x.JPG)
 
 ![diagram](doc/scheme0.png)
 
