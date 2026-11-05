@@ -173,6 +173,24 @@ void DisplayUtils::showSensorData(float magX, float magY, float magZ,
                                   bool readSuccess, int currentOption,
                                   const char *const labels[])
 {
+    // Umbrales (sin cambios)
+    const float WARNING_THRESHOLD = 125.0f;
+    const float MAGNETIZED_THRESHOLD = 175.0f;
+
+    // Deltas (misma fórmula que antes)
+    float deltaX = abs(magX - prevX);
+    float deltaY = abs(magY - prevY);
+    float deltaZ = abs(magZ - prevZ);
+
+    // Eje con mayor delta
+    float maxDelta = deltaX;
+    char maxAxis = 'X';
+    if (deltaY > maxDelta) { maxDelta = deltaY; maxAxis = 'Y'; }
+    if (deltaZ > maxDelta) { maxDelta = deltaZ; maxAxis = 'Z'; }
+
+    bool isWarning = (maxDelta > WARNING_THRESHOLD);
+    bool isMagnetized = (maxDelta > MAGNETIZED_THRESHOLD);
+
     display.firstPage();
     do
     {
@@ -181,7 +199,6 @@ void DisplayUtils::showSensorData(float magX, float magY, float magZ,
 
         if (readSuccess)
         {
-            // Linear scale: 6 bars = 125 uT, each bar ~21 uT
             auto calculateBars = [](float delta) -> int
             {
                 if (delta <= 0)
@@ -192,7 +209,6 @@ void DisplayUtils::showSensorData(float magX, float magY, float magZ,
                 return bars;
             };
 
-            // VU meter with empty frames as background scale and proportional fill
             auto drawVumeter = [&](int x, int y, int bars)
             {
                 for (int i = 0; i < 6; i++)
@@ -200,9 +216,7 @@ void DisplayUtils::showSensorData(float magX, float magY, float magZ,
                     int bx = x + (i * 5);
                     display.drawFrame(bx, y, 5, 10);
                     if (i < bars)
-                    {
                         display.drawBox(bx, y, 5, 10);
-                    }
                 }
             };
 
@@ -214,52 +228,56 @@ void DisplayUtils::showSensorData(float magX, float magY, float magZ,
                 display.print(buffer);
             };
 
-            // Draws full VU meter + alert symbol if threshold is exceeded
             auto drawVumeterWithAlert = [&](int x, int y, float delta, int bars)
             {
                 drawVumeter(x, y, bars);
-                if (delta > 175)
-                {
+                if (delta > MAGNETIZED_THRESHOLD)
                     AlertSymbols::drawRadiation(display, x + 32, y);
-                }
-                else if (delta > 125)
-                {
+                else if (delta > WARNING_THRESHOLD)
                     AlertSymbols::drawWarning(display, x + 32, y);
-                }
             };
-
-            float deltaX = abs(magX - prevX);
-            float deltaY = abs(magY - prevY);
-            float deltaZ = abs(magZ - prevZ);
-
-            int barsX = calculateBars(deltaX);
-            int barsY = calculateBars(deltaY);
-            int barsZ = calculateBars(deltaZ);
 
             // X axis
             display.setCursor(12, 15);
             display.print("X:");
             formatFixedWidthNumber(22, 15, magX);
             display.print(" uT");
-            drawVumeterWithAlert(76, 8, deltaX, barsX);
+            drawVumeterWithAlert(76, 8, deltaX, calculateBars(deltaX));
 
             // Y axis
             display.setCursor(12, 30);
             display.print("Y:");
             formatFixedWidthNumber(22, 30, magY);
             display.print(" uT");
-            drawVumeterWithAlert(76, 23, deltaY, barsY);
+            drawVumeterWithAlert(76, 23, deltaY, calculateBars(deltaY));
 
             // Z axis
             display.setCursor(12, 45);
             display.print("Z:");
             formatFixedWidthNumber(22, 45, magZ);
             display.print(" uT");
-            drawVumeterWithAlert(76, 38, deltaZ, barsZ);
+            drawVumeterWithAlert(76, 38, deltaZ, calculateBars(deltaZ));
 
-            // Gain setting
-            display.setCursor(12, 60);
-            display.print(labels[currentOption]);
+            // --- Línea diagnóstico (sustituye a la ganancia) ---
+            // Símbolo Δ dibujado (7x6 px), base en y=60
+            display.drawLine(15, 54, 12, 60);
+            display.drawLine(15, 54, 18, 60);
+            display.drawLine(12, 60, 18, 60);
+
+            char buf[16];
+            display.setFont(u8g2_font_ncenB08_tr);
+            if (isWarning)
+                snprintf(buf, sizeof(buf), "%c: %.0f", maxAxis, maxDelta);
+            else
+                snprintf(buf, sizeof(buf), "--: 0");
+            display.setCursor(22, 60);
+            display.print(buf);
+
+            if (isMagnetized)
+            {
+                display.setFont(u8g2_font_5x7_tr);
+                display.drawStr(64, 60, "-MAGNETIZED-");
+            }
         }
         else
         {
