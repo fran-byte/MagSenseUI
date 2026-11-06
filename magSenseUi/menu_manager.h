@@ -9,8 +9,16 @@
 class MenuManager
 {
 private:
+    // Indices del menu: 0-7 ganancia, 8 serie, 9-10 vista
+    enum
+    {
+        OPT_SERIAL = 8,
+        OPT_VIEW_MODERN = 9,
+        OPT_VIEW_CLASSIC = 10
+    };
+
     // Menu configuration
-    static const char *gainLabels[9];
+    static const char *gainLabels[11];
     static const mlx90393_gain gainValues[8];
     static const int TOTAL_OPTIONS;
     static const int visibleMenuOptions;
@@ -26,6 +34,7 @@ private:
     static const unsigned long MENU_TIMEOUT;
 
     static void adjustScroll();
+    static void restoreCurrentOption();
 
 public:
     static void begin();
@@ -38,7 +47,7 @@ public:
 };
 
 // Static constant definitions
-const char *MenuManager::gainLabels[9] = {
+const char *MenuManager::gainLabels[11] = {
     "Gain 1X",
     "Gain 1.33X",
     "Gain 1.67X",
@@ -47,7 +56,9 @@ const char *MenuManager::gainLabels[9] = {
     "Gain 3X",
     "Gain 4X",
     "Gain 5X",
-    "Serial ON"
+    "Serial ON",
+    "View: Modern",
+    "View: Classic"
 };
 
 const mlx90393_gain MenuManager::gainValues[8] = {
@@ -55,7 +66,7 @@ const mlx90393_gain MenuManager::gainValues[8] = {
     MLX90393_GAIN_2X, MLX90393_GAIN_2_5X, MLX90393_GAIN_3X,
     MLX90393_GAIN_4X, MLX90393_GAIN_5X};
 
-const int MenuManager::TOTAL_OPTIONS = 9;
+const int MenuManager::TOTAL_OPTIONS = 11;
 const int MenuManager::visibleMenuOptions = 5;
 const unsigned long MenuManager::MENU_TIMEOUT = 5000;
 
@@ -71,6 +82,9 @@ void MenuManager::begin()
 {
     currentOption = SensorManager::getCurrentGainIndex();
     adjustScroll();
+
+    // Vista guardada en EEPROM (SensorManager::begin() ya debe haberse ejecutado)
+    DisplayUtils::setViewMode(SensorManager::getViewMode());
 }
 
 void MenuManager::adjustScroll()
@@ -83,6 +97,17 @@ void MenuManager::adjustScroll()
     {
         menuScrollOffset = currentOption - visibleMenuOptions + 1;
     }
+}
+
+// currentOption describe el estado real que consume el resto del programa
+// (etiqueta de ganancia / modo serie). Las opciones de vista no son un estado
+// de ganancia, asi que tras usarlas se vuelve al valor real.
+void MenuManager::restoreCurrentOption()
+{
+    currentOption = SensorManager::isSerialModeActive()
+                        ? (int)OPT_SERIAL
+                        : SensorManager::getCurrentGainIndex();
+    adjustScroll();
 }
 
 void MenuManager::handleMenuNavigation()
@@ -111,7 +136,25 @@ void MenuManager::handleMenuNavigation()
 
     if (ButtonHandler::wasSelectPressed())
     {
-        if (currentOption == 8)
+        if (currentOption >= OPT_VIEW_MODERN)
+        {
+            // Cambio de vista: no toca ganancia ni modo serie
+            int newView = (currentOption == OPT_VIEW_CLASSIC) ? DisplayUtils::VIEW_CLASSIC
+                                                             : DisplayUtils::VIEW_MODERN;
+            DisplayUtils::setViewMode(newView);
+            SensorManager::setViewMode(newView);
+            SensorManager::saveViewToEEPROM();
+
+            isConfigured = true;
+            inMenuMode = false;
+
+            // Resumen con la etiqueta de la vista elegida
+            DisplayUtils::showSummary(false, currentOption, gainLabels);
+            restoreCurrentOption();
+            return;
+        }
+
+        if (currentOption == OPT_SERIAL)
         {
             SensorManager::setSerialMode(true);
         }
@@ -132,6 +175,10 @@ void MenuManager::handleMenuNavigation()
 
     if (currentTime - menuStartTime > MENU_TIMEOUT)
     {
+        // Si caduca con el cursor sobre una opcion de vista, no se aplica
+        if (currentOption >= OPT_VIEW_MODERN)
+            restoreCurrentOption();
+
         isConfigured = true;
         inMenuMode = false;
 

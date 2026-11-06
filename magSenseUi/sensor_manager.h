@@ -22,6 +22,7 @@ private:
     // Configuration
     static int currentGainIndex;
     static bool serialModeActive;
+    static int viewMode; // 0 = moderna, 1 = clasica (EEPROM direccion 1)
 
 public:
     static void begin();
@@ -40,6 +41,10 @@ public:
     static bool getReadSuccess() { return readSuccess; }
     static void saveGainToEEPROM();
     static void loadGainFromEEPROM();
+    static void setViewMode(int mode) { viewMode = (mode == 1) ? 1 : 0; }
+    static int getViewMode() { return viewMode; }
+    static void saveViewToEEPROM();
+    static void loadViewFromEEPROM();
 };
 
 // Static variable initialization
@@ -55,12 +60,14 @@ unsigned long SensorManager::lastMeasurementTime = 0;
 const unsigned long SensorManager::MEASUREMENT_INTERVAL = 500;
 int SensorManager::currentGainIndex = 0;
 bool SensorManager::serialModeActive = false;
+int SensorManager::viewMode = 0;
 
 // Implementations
 void SensorManager::begin()
 {
-    EEPROM.begin(1);
+    EEPROM.begin(2); // 0 = ganancia, 1 = vista
     loadGainFromEEPROM();
+    loadViewFromEEPROM();
 
     if (!magneticSensor.begin_I2C())
     {
@@ -140,6 +147,18 @@ void SensorManager::loadGainFromEEPROM()
     {
         currentGainIndex = savedOption;
     }
+}
+
+void SensorManager::saveViewToEEPROM()
+{
+    EEPROM.write(1, viewMode);
+    EEPROM.commit();
+}
+
+void SensorManager::loadViewFromEEPROM()
+{
+    // Solo 1 = clasica; cualquier otro valor (0, 0xFF de EEPROM virgen) = moderna
+    viewMode = (EEPROM.read(1) == 1) ? 1 : 0;
 }
 
 #endif
