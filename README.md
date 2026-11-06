@@ -169,6 +169,7 @@ This **1.3-inch OLED** display uses the **SH1106** driver and communicates via I
 
 <img src="doc/video.png" width="70%">
 <img src="doc/sensando.png" width="70%">
+<img src="doc/show2.png" width="70%">
 <img src="doc/3.png" width="70%">
 <img src="doc/2.jpg" width="70%">
 
