@@ -198,7 +198,7 @@ void DisplayUtils::showSensorData(float magX, float magY, float magZ,
 //
 // Layout (128x64):
 // y 1- 9 X / Y / Z en 3 columnas (x = 0, 43, 86)
-// y 13-44 grafica de |B| a todo el ancho (32 muestras = 16 s), zoom automatico
+// y 13-44 grafica de |B| a todo el ancho (21 muestras = 10 s), zoom automatico
 // y 46-53 |B| (izq) y rango vertical de la grafica (der)
 // y 55-63 Δ <eje>:<valor> (izq) y OK / WARNING / MAGNETIZED (der),
 // en barra inversa y parpadeante si MAGNETIZED
@@ -212,9 +212,9 @@ void DisplayUtils::showSensorDataModern(float magX, float magY, float magZ,
     const float WARNING_THRESHOLD = 125.0f;
     const float MAGNETIZED_THRESHOLD = 175.0f;
 
-    // Historico de |B|: 32 muestras x 500 ms = 16 s, cada muestra ocupa 4 columnas
-    const int HIST_LEN = 32;
-    const int COL_PER_SAMPLE = 4; // 32 x 4 = 128 px de ancho
+    // Historico de |B|: 21 muestras = 20 intervalos x 500 ms = 10 s,
+    // repartidas en los 128 px (127/20 = 6,35 px por intervalo)
+    const int HIST_LEN = 21;
     const int GRAPH_TOP = 13;
     const int GRAPH_BOTTOM = 44;
     const int GRAPH_H = GRAPH_BOTTOM - GRAPH_TOP; // 31 px
@@ -317,7 +317,7 @@ void DisplayUtils::showSensorDataModern(float magX, float magY, float magZ,
     }
 
     // Linea continua, la muestra mas reciente en x=127 (con marcador)
-    int x0 = 127 - (histCount - 1) * COL_PER_SAMPLE;
+    int prevPx = 0;
     int prevPy = GRAPH_BOTTOM;
     for (int i = 0; i < histCount; i++)
     {
@@ -328,11 +328,12 @@ void DisplayUtils::showSensorDataModern(float magX, float magY, float magZ,
         if (py > GRAPH_BOTTOM)
             py = GRAPH_BOTTOM;
 
-        int px = x0 + i * COL_PER_SAMPLE;
+        int px = 127 - ((histCount - 1 - i) * 127) / (HIST_LEN - 1);
         if (i > 0)
-            display.drawLine(px - COL_PER_SAMPLE, prevPy, px, py);
+            display.drawLine(prevPx, prevPy, px, py);
         else
             display.drawPixel(px, py);
+        prevPx = px;
         prevPy = py;
 
         if (i == histCount - 1)
