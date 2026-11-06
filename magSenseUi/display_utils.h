@@ -36,6 +36,7 @@ public:
     static void begin();
     static void showIntro();
     static void showMagnetic();
+    static void showSetupPrompt(int secondsLeft);
     static void showErrorMessage(const char *msg);
     static void showMenu(const char *const labels[], int totalOptions,
                          int currentOption, int scrollOffset);
@@ -89,6 +90,27 @@ void DisplayUtils::showMagnetic()
     } while (display.nextPage());
 
     delay(3000);
+}
+
+// Pantalla de arranque: invita a entrar en configuracion y muestra la cuenta
+// atras en digitos grandes (logisoso32, 32 px de alto).
+void DisplayUtils::showSetupPrompt(int secondsLeft)
+{
+    char num[2] = {(char)('0' + secondsLeft), 0};
+
+    display.firstPage();
+    do
+    {
+        display.setDrawColor(1);
+        display.drawFrame(0, 0, 128, 64);
+
+        display.setFont(u8g2_font_6x10_tf);
+        const char *msg = "Press SET for setup";
+        display.drawStr((128 - display.getStrWidth(msg)) / 2, 14, msg);
+
+        display.setFont(u8g2_font_logisoso32_tn);
+        display.drawStr((128 - display.getStrWidth(num)) / 2, 58, num);
+    } while (display.nextPage());
 }
 
 void DisplayUtils::showErrorMessage(const char *msg)
@@ -197,11 +219,11 @@ void DisplayUtils::showSensorData(float magX, float magY, float magZ,
 // VISTA MODERNA
 //
 // Layout (128x64):
-// y 0-10 X / Y / Z en 3 columnas (x = 0, 43, 86); en negativo si su delta > 175
-// y 13-44 grafica de |B| a todo el ancho (21 muestras = 10 s), zoom automatico
-// y 46-53 |B| (izq) y rango vertical de la grafica (der)
-// y 55-63 Δ <eje>:<valor> (izq) y OK / WARNING / MAGNETIZED (der),
-// en barra inversa y parpadeante si MAGNETIZED
+//   y  0-10  X / Y / Z en 3 columnas (x = 0, 43, 86); en negativo si su delta > 175
+//   y 13-44  grafica de |B| a todo el ancho (21 muestras = 10 s), zoom automatico
+//   y 46-53  |B| (izq) y rango vertical de la grafica (der)
+//   y 55-63  Δ <eje>:<valor> (izq) y OK / WARNING / MAGNETIZED (der),
+//            en barra inversa y parpadeante si MAGNETIZED
 // ---------------------------------------------------------------------------
 void DisplayUtils::showSensorDataModern(float magX, float magY, float magZ,
                                         float prevX, float prevY, float prevZ,
@@ -218,9 +240,9 @@ void DisplayUtils::showSensorDataModern(float magX, float magY, float magZ,
     const int GRAPH_TOP = 13;
     const int GRAPH_BOTTOM = 44;
     const int GRAPH_H = GRAPH_BOTTOM - GRAPH_TOP; // 31 px
-    const float MIN_SPAN = 20.0f; // uT: rango vertical minimo
+    const float MIN_SPAN = 20.0f;                 // uT: rango vertical minimo
     static float history[HIST_LEN];
-    static int histHead = 0; // proxima posicion a escribir
+    static int histHead = 0;  // proxima posicion a escribir
     static int histCount = 0; // muestras validas
     static float lastX = 0, lastY = 0, lastZ = 0;
     static bool firstSample = true;

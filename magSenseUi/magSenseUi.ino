@@ -24,7 +24,13 @@ void setup()
 
     DisplayUtils::showIntro();
     DisplayUtils::showMagnetic();
-    MenuManager::enterMenuMode();
+
+    // 3 s countdown: press SET to open the menu, otherwise start measuring
+    // directly with the stored settings.
+    if (MenuManager::waitForSetup())
+    {
+        MenuManager::enterMenuMode();
+    }
 }
 
 void loop()

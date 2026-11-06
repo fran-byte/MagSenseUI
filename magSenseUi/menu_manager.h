@@ -41,6 +41,7 @@ public:
     static void handleMenuNavigation();
     static void enterMenuMode();
     static void returnToMenu();
+    static bool waitForSetup(int seconds = 3);
     static bool isInMenuMode() { return inMenuMode; }
     static int getCurrentOption() { return currentOption; }
     static const char *const *getGainLabels() { return gainLabels; }
@@ -193,6 +194,26 @@ void MenuManager::handleMenuNavigation()
                                currentOption, menuScrollOffset);
         needsRedraw = false;
     }
+}
+
+// Cuenta atras de arranque. Devuelve true si se pulsa SET (entrar en
+// configuracion); false si termina la cuenta y se sigue con el valor guardado.
+bool MenuManager::waitForSetup(int seconds)
+{
+    for (int s = seconds; s > 0; s--)
+    {
+        DisplayUtils::showSetupPrompt(s);
+
+        unsigned long start = millis();
+        while (millis() - start < 1000)
+        {
+            ButtonHandler::update();
+            if (ButtonHandler::wasSelectPressed())
+                return true;
+            delay(5);
+        }
+    }
+    return false;
 }
 
 void MenuManager::enterMenuMode()
