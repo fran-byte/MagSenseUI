@@ -146,7 +146,7 @@ The MLX90393 features a wide dynamic range and programmable gain, allowing it to
 
 The MLX90393 provides a maximum resolution of approximately 0.161 µT/LSB. Measurements near this limit may be affected by sensor noise and environmental magnetic interference.
 
-<img src="mlx90393.jpg" width="50%">
+<img src="mlx90393.jpg" width="30%">
 
 
 ---
