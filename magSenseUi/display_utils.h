@@ -197,7 +197,7 @@ void DisplayUtils::showSensorData(float magX, float magY, float magZ,
 // VISTA MODERNA
 //
 // Layout (128x64):
-// y 1- 9 X / Y / Z en 3 columnas (x = 0, 43, 86)
+// y 0-10 X / Y / Z en 3 columnas (x = 0, 43, 86); en negativo si su delta > 175
 // y 13-44 grafica de |B| a todo el ancho (21 muestras = 10 s), zoom automatico
 // y 46-53 |B| (izq) y rango vertical de la grafica (der)
 // y 55-63 Δ <eje>:<valor> (izq) y OK / WARNING / MAGNETIZED (der),
@@ -277,13 +277,23 @@ void DisplayUtils::showSensorDataModern(float magX, float magY, float magZ,
     char buf[24];
 
     // ---- X / Y / Z en columnas fijas ----
+    // Si la delta de un eje supera el umbral MAGNETIZED, su letra y su valor
+    // se dibujan en negativo (caja rellena + texto en color 0).
     display.setFont(u8g2_font_6x10_tf);
-    snprintf(buf, sizeof(buf), "X%+5.0f", magX);
-    display.drawStr(0, 9, buf);
-    snprintf(buf, sizeof(buf), "Y%+5.0f", magY);
-    display.drawStr(43, 9, buf);
-    snprintf(buf, sizeof(buf), "Z%+5.0f", magZ);
-    display.drawStr(86, 9, buf);
+    auto drawAxis = [&](int x, char axis, float value, bool alarm)
+    {
+        snprintf(buf, sizeof(buf), "%c%+5.0f", axis, value);
+        if (alarm)
+        {
+            display.drawBox(x > 0 ? x - 1 : 0, 0, 38, 11);
+            display.setDrawColor(0);
+        }
+        display.drawStr(x, 9, buf);
+        display.setDrawColor(1);
+    };
+    drawAxis(0, 'X', magX, deltaX > MAGNETIZED_THRESHOLD);
+    drawAxis(43, 'Y', magY, deltaY > MAGNETIZED_THRESHOLD);
+    drawAxis(86, 'Z', magZ, deltaZ > MAGNETIZED_THRESHOLD);
 
     // ---- Grafica de |B| a todo el ancho ----
     // Rango vertical automatico: zoom a min..max con un span minimo, para que
