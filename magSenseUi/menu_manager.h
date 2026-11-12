@@ -9,7 +9,9 @@
 class MenuManager
 {
 private:
-    // Indices del menu: 0-7 ganancia, 8 serie, 9-10 vista, 11-13 rangos
+    // Identificadores de opcion (no son posiciones en pantalla):
+    // 0-7 ganancia, 8 serie, 9-10 vista, 11-13 rangos,
+    // 14 entrada "Gain" del menu principal, 15 "< Back" del submenu de ganancia
     enum
     {
         OPT_SERIAL = 8,
@@ -17,18 +19,34 @@ private:
         OPT_VIEW_CLASSIC = 10,
         OPT_RANGE = 11, // rango vertical de la grafica (uT)
         OPT_WARN = 12,  // umbral WARNING (uT)
-        OPT_ERROR = 13  // umbral MAGNETIZED / error (uT)
+        OPT_ERROR = 13, // umbral MAGNETIZED / error (uT)
+        OPT_GAIN_MENU = 14,
+        OPT_BACK = 15
     };
 
-    // Menu configuration
+    // Niveles del menu
+    enum
+    {
+        LEVEL_MAIN = 0, // Gain > / Serial / Views / Range / Warn / Error
+        LEVEL_GAIN = 1  // 8 ganancias + Back
+    };
+
+    static const int MAIN_SIZE = 7; // posiciones del menu principal
+    static const int GAIN_SIZE = 9; // 8 ganancias + Back
+
+    // Etiquetas por identificador de opcion (tambien las usa showSummary)
     static char valueLabels[3][20]; // etiquetas dinamicas de 11-13
+    static char gainEntryLabel[20]; // "Gain 2X >" (entrada del menu principal)
     static const char *gainLabels[14];
     static const mlx90393_gain gainValues[8];
-    static const int TOTAL_OPTIONS;
     static const int visibleMenuOptions;
 
-    // System state
-    static int currentOption;
+    // Etiquetas de la pantalla actual, por posicion
+    static const char *menuLabels[9];
+
+    // Estado de navegacion
+    static int level;
+    static int cursor;
     static int menuScrollOffset;
     static bool isConfigured;
     static bool inMenuMode;
@@ -41,13 +59,16 @@ private:
     static unsigned long menuStartTime;
     static const unsigned long MENU_TIMEOUT;
 
+    static int listSize();
+    static int optionAt(int pos);
     static void adjustScroll();
-    static void restoreCurrentOption();
-    static void refreshValueLabels();
+    static void refreshLabels();
+    static void drawMenu();
     static void editBounds(int option, int &lo, int &hi, int &step);
     static int currentValueOf(int option);
     static void commitEdit();
     static void applyRanges();
+    static int activeOption();
 
 public:
     static void begin();
@@ -56,12 +77,13 @@ public:
     static void returnToMenu();
     static bool waitForSetup(int seconds = 3);
     static bool isInMenuMode() { return inMenuMode; }
-    static int getCurrentOption() { return currentOption; }
+    static int getCurrentOption() { return activeOption(); }
     static const char *const *getGainLabels() { return gainLabels; }
 };
 
 // Static constant definitions
 char MenuManager::valueLabels[3][20] = {"", "", ""};
+char MenuManager::gainEntryLabel[20] = "";
 
 const char *MenuManager::gainLabels[14] = {
     "Gain 1X",
@@ -85,12 +107,13 @@ const mlx90393_gain MenuManager::gainValues[8] = {
     MLX90393_GAIN_2X, MLX90393_GAIN_2_5X, MLX90393_GAIN_3X,
     MLX90393_GAIN_4X, MLX90393_GAIN_5X};
 
-const int MenuManager::TOTAL_OPTIONS = 14;
 const int MenuManager::visibleMenuOptions = 5;
 const unsigned long MenuManager::MENU_TIMEOUT = 5000;
+const char *MenuManager::menuLabels[9] = {};
 
 // Static variable initialization
-int MenuManager::currentOption = 0;
+int MenuManager::level = MenuManager::LEVEL_MAIN;
+int MenuManager::cursor = 0;
 int MenuManager::menuScrollOffset = 0;
 bool MenuManager::isConfigured = false;
 bool MenuManager::inMenuMode = false;
@@ -101,36 +124,47 @@ unsigned long MenuManager::menuStartTime = 0;
 // Implementations
 void MenuManager::begin()
 {
-    currentOption = SensorManager::getCurrentGainIndex();
-    adjustScroll();
-
     // Vista y rangos guardados en EEPROM (SensorManager::begin() ya debe haberse ejecutado)
     DisplayUtils::setViewMode(SensorManager::getViewMode());
     applyRanges();
-    refreshValueLabels();
+    refreshLabels();
+}
+
+// Numero de entradas del nivel actual
+int MenuManager::listSize()
+{
+    return (level == LEVEL_MAIN) ? MAIN_SIZE : GAIN_SIZE;
+}
+
+// Identificador de opcion que hay en una posicion del nivel actual
+int MenuManager::optionAt(int pos)
+{
+    if (level == LEVEL_MAIN)
+    {
+        static const int mainOptions[MAIN_SIZE] = {
+            OPT_GAIN_MENU, OPT_SERIAL, OPT_VIEW_MODERN, OPT_VIEW_CLASSIC,
+            OPT_RANGE, OPT_WARN, OPT_ERROR};
+        return mainOptions[pos];
+    }
+    return (pos < 8) ? pos : (int)OPT_BACK;
+}
+
+// Opcion bajo el cursor
+int MenuManager::activeOption()
+{
+    return optionAt(cursor);
 }
 
 void MenuManager::adjustScroll()
 {
-    if (currentOption < menuScrollOffset)
+    if (cursor < menuScrollOffset)
     {
-        menuScrollOffset = currentOption;
+        menuScrollOffset = cursor;
     }
-    else if (currentOption >= menuScrollOffset + visibleMenuOptions)
+    else if (cursor >= menuScrollOffset + visibleMenuOptions)
     {
-        menuScrollOffset = currentOption - visibleMenuOptions + 1;
+        menuScrollOffset = cursor - visibleMenuOptions + 1;
     }
-}
-
-// currentOption describe el estado real que consume el resto del programa
-// (etiqueta de ganancia / modo serie). Las opciones de vista y de rangos no son
-// un estado de ganancia, asi que tras usarlas se vuelve al valor real.
-void MenuManager::restoreCurrentOption()
-{
-    currentOption = SensorManager::isSerialModeActive()
-                        ? (int)OPT_SERIAL
-                        : SensorManager::getCurrentGainIndex();
-    adjustScroll();
 }
 
 // Pasa los rangos guardados al modulo de dibujo
@@ -173,28 +207,52 @@ void MenuManager::editBounds(int option, int &lo, int &hi, int &step)
     }
 }
 
-// Reconstruye las tres etiquetas dinamicas. En edicion, el valor que se esta
-// editando se muestra entre < >.
-void MenuManager::refreshValueLabels()
+// Reconstruye las etiquetas dinamicas y la lista de la pantalla actual.
+// En edicion, el valor que se esta editando se muestra entre < >.
+void MenuManager::refreshLabels()
 {
     const char *names[3] = {"Range", "Warn", "Error"};
+    int active = activeOption();
     for (int i = 0; i < 3; i++)
     {
         int opt = OPT_RANGE + i;
-        bool edit = editing && currentOption == opt;
+        bool edit = editing && active == opt;
         int v = edit ? editValue : currentValueOf(opt);
         if (edit)
             snprintf(valueLabels[i], sizeof(valueLabels[i]), "%s: <%d> uT", names[i], v);
         else
             snprintf(valueLabels[i], sizeof(valueLabels[i]), "%s: %d uT", names[i], v);
     }
+
+    // Entrada del menu principal: muestra la ganancia vigente
+    snprintf(gainEntryLabel, sizeof(gainEntryLabel), "%s >",
+             gainLabels[SensorManager::getCurrentGainIndex()]);
+
+    for (int pos = 0; pos < listSize(); pos++)
+    {
+        int id = optionAt(pos);
+        if (id == OPT_GAIN_MENU)
+            menuLabels[pos] = gainEntryLabel;
+        else if (id == OPT_BACK)
+            menuLabels[pos] = "< Back";
+        else
+            menuLabels[pos] = gainLabels[id];
+    }
+}
+
+void MenuManager::drawMenu()
+{
+    refreshLabels();
+    DisplayUtils::showMenu(menuLabels, listSize(), cursor, menuScrollOffset,
+                           level == LEVEL_MAIN ? "MagSenseUI" : "Gain");
 }
 
 void MenuManager::commitEdit()
 {
-    if (currentOption == OPT_RANGE)
+    int id = activeOption();
+    if (id == OPT_RANGE)
         SensorManager::setRange(editValue);
-    else if (currentOption == OPT_WARN)
+    else if (id == OPT_WARN)
         SensorManager::setWarning(editValue);
     else
         SensorManager::setError(editValue);
@@ -221,12 +279,11 @@ void MenuManager::handleMenuNavigation()
         if (up || down)
         {
             int lo, hi, step;
-            editBounds(currentOption, lo, hi, step);
+            editBounds(activeOption(), lo, hi, step);
             if (up)
                 editValue = (editValue + step > hi) ? hi : editValue + step;
             else
                 editValue = (editValue - step < lo) ? lo : editValue - step;
-            refreshValueLabels();
             buttonPressed = true;
             menuStartTime = currentTime;
         }
@@ -235,7 +292,6 @@ void MenuManager::handleMenuNavigation()
         {
             commitEdit();
             editing = false;
-            refreshValueLabels();
             buttonPressed = true;
             menuStartTime = currentTime;
         }
@@ -244,7 +300,7 @@ void MenuManager::handleMenuNavigation()
     {
         if (up)
         {
-            currentOption = (currentOption == 0) ? TOTAL_OPTIONS - 1 : currentOption - 1;
+            cursor = (cursor == 0) ? listSize() - 1 : cursor - 1;
             adjustScroll();
             buttonPressed = true;
             menuStartTime = currentTime;
@@ -252,7 +308,7 @@ void MenuManager::handleMenuNavigation()
 
         if (down)
         {
-            currentOption = (currentOption + 1) % TOTAL_OPTIONS;
+            cursor = (cursor + 1) % listSize();
             adjustScroll();
             buttonPressed = true;
             menuStartTime = currentTime;
@@ -260,20 +316,40 @@ void MenuManager::handleMenuNavigation()
 
         if (select)
         {
-            if (currentOption >= OPT_RANGE)
+            int id = activeOption();
+
+            if (id == OPT_GAIN_MENU)
             {
-                // Entra en edicion del valor; no sale del menu
-                editing = true;
-                editValue = currentValueOf(currentOption);
-                refreshValueLabels();
+                // Abre el submenu con el cursor sobre la ganancia vigente
+                level = LEVEL_GAIN;
+                cursor = SensorManager::getCurrentGainIndex();
+                menuScrollOffset = 0;
+                adjustScroll();
                 buttonPressed = true;
                 menuStartTime = currentTime;
             }
-            else if (currentOption >= OPT_VIEW_MODERN)
+            else if (id == OPT_BACK)
+            {
+                // Vuelve al menu principal, sobre la entrada Gain
+                level = LEVEL_MAIN;
+                cursor = 0;
+                menuScrollOffset = 0;
+                buttonPressed = true;
+                menuStartTime = currentTime;
+            }
+            else if (id >= OPT_RANGE)
+            {
+                // Entra en edicion del valor; no sale del menu
+                editing = true;
+                editValue = currentValueOf(id);
+                buttonPressed = true;
+                menuStartTime = currentTime;
+            }
+            else if (id >= OPT_VIEW_MODERN)
             {
                 // Cambio de vista: no toca ganancia ni modo serie
-                int newView = (currentOption == OPT_VIEW_CLASSIC) ? DisplayUtils::VIEW_CLASSIC
-                                                                 : DisplayUtils::VIEW_MODERN;
+                int newView = (id == OPT_VIEW_CLASSIC) ? DisplayUtils::VIEW_CLASSIC
+                                                      : DisplayUtils::VIEW_MODERN;
                 DisplayUtils::setViewMode(newView);
                 SensorManager::setViewMode(newView);
                 SensorManager::saveViewToEEPROM();
@@ -282,20 +358,19 @@ void MenuManager::handleMenuNavigation()
                 inMenuMode = false;
 
                 // Resumen con la etiqueta de la vista elegida
-                DisplayUtils::showSummary(false, currentOption, gainLabels);
-                restoreCurrentOption();
+                DisplayUtils::showSummary(false, id, gainLabels);
                 return;
             }
             else
             {
-                if (currentOption == OPT_SERIAL)
+                if (id == OPT_SERIAL)
                 {
                     SensorManager::setSerialMode(true);
                 }
                 else
                 {
                     SensorManager::setSerialMode(false);
-                    SensorManager::setGain(currentOption);
+                    SensorManager::setGain(id);
                     SensorManager::saveGainToEEPROM();
                 }
 
@@ -303,7 +378,7 @@ void MenuManager::handleMenuNavigation()
                 inMenuMode = false;
 
                 DisplayUtils::showSummary(SensorManager::isSerialModeActive(),
-                                          currentOption, gainLabels);
+                                          id, gainLabels);
                 return;
             }
         }
@@ -311,29 +386,21 @@ void MenuManager::handleMenuNavigation()
 
     if (currentTime - menuStartTime > MENU_TIMEOUT)
     {
-        // Una edicion sin confirmar se descarta al caducar
-        if (editing)
-        {
-            editing = false;
-            refreshValueLabels();
-        }
-
-        // Si caduca con el cursor sobre una opcion de vista o de rango, no se aplica
-        if (currentOption >= OPT_VIEW_MODERN)
-            restoreCurrentOption();
+        // Al caducar no se aplica nada: una edicion sin confirmar se descarta
+        editing = false;
 
         isConfigured = true;
         inMenuMode = false;
 
+        // Resumen del estado real (modo serie o ganancia vigente)
         DisplayUtils::showSummary(SensorManager::isSerialModeActive(),
-                                  currentOption, gainLabels);
+                                  getCurrentOption(), gainLabels);
         return;
     }
 
     if (buttonPressed || needsRedraw)
     {
-        DisplayUtils::showMenu(gainLabels, TOTAL_OPTIONS,
-                               currentOption, menuScrollOffset);
+        drawMenu();
         needsRedraw = false;
     }
 }
@@ -358,24 +425,21 @@ bool MenuManager::waitForSetup(int seconds)
     return false;
 }
 
+// Estado de partida al abrir el menu: nivel principal, cursor arriba
 void MenuManager::enterMenuMode()
 {
     inMenuMode = true;
     editing = false;
+    level = LEVEL_MAIN;
+    cursor = 0;
+    menuScrollOffset = 0;
     menuStartTime = millis();
-    refreshValueLabels();
-    DisplayUtils::showMenu(gainLabels, TOTAL_OPTIONS,
-                           currentOption, menuScrollOffset);
+    drawMenu();
 }
 
 void MenuManager::returnToMenu()
 {
-    inMenuMode = true;
-    editing = false;
-    menuStartTime = millis();
-    refreshValueLabels();
-    DisplayUtils::showMenu(gainLabels, TOTAL_OPTIONS,
-                           currentOption, menuScrollOffset);
+    enterMenuMode();
 }
 
 #endif

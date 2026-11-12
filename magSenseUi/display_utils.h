@@ -45,7 +45,8 @@ public:
     static void showSetupPrompt(int secondsLeft);
     static void showErrorMessage(const char *msg);
     static void showMenu(const char *const labels[], int totalOptions,
-                         int currentOption, int scrollOffset);
+                         int currentOption, int scrollOffset,
+                         const char *title = "MagSenseUI");
     static void showSummary(bool serialModeActive, int currentOption,
                             const char *const labels[]);
     static void showSensorData(float magX, float magY, float magZ,
@@ -142,7 +143,8 @@ void DisplayUtils::showErrorMessage(const char *msg)
 void DisplayUtils::showMenu(const char *const labels[],
                             int totalOptions,
                             int currentOption,
-                            int scrollOffset)
+                            int scrollOffset,
+                            const char *title)
 {
     const int visibleMenuOptions = 5;
 
@@ -157,7 +159,7 @@ void DisplayUtils::showMenu(const char *const labels[],
         // Cabecera invertida
         display.drawBox(1, 1, 126, 12);
         display.setDrawColor(0);
-        display.drawStr(28, 10, "MagSenseUI");
+        display.drawStr((128 - display.getStrWidth(title)) / 2, 10, title);
         display.setDrawColor(1);
 
         // Opciones
