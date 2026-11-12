@@ -13,7 +13,7 @@ public:
     // Vistas de lectura seleccionables desde el menu
     enum ViewMode
     {
-        VIEW_MODERN = 0, // historico + |B| + diagnostico Δ
+        VIEW_MODERN = 0, // historico + dB + diagnostico Δ
         VIEW_CLASSIC = 1 // original: barras VU por eje + ganancia
     };
 
@@ -88,7 +88,6 @@ void DisplayUtils::showMagnetic()
             IMAN128F_HEIGHT,
             imanAscii128x64_fixed);
     } while (display.nextPage());
-
     delay(3000);
 }
 
@@ -148,7 +147,6 @@ void DisplayUtils::showMenu(const char *const labels[],
         for (int i = 0; i < visibleMenuOptions; i++)
         {
             int idx = scrollOffset + i;
-
             if (idx >= totalOptions)
                 break;
 
@@ -158,13 +156,10 @@ void DisplayUtils::showMenu(const char *const labels[],
             {
                 // Línea seleccionada en negativo
                 display.drawBox(2, y - 8, 124, 10);
-
                 display.setDrawColor(0);
-
                 display.setCursor(6, y);
                 display.print("> ");
                 display.print(labels[idx]);
-
                 display.setDrawColor(1);
             }
             else
@@ -173,7 +168,6 @@ void DisplayUtils::showMenu(const char *const labels[],
                 display.print(labels[idx]);
             }
         }
-
     } while (display.nextPage());
 }
 
@@ -187,6 +181,7 @@ void DisplayUtils::showSummary(bool serialModeActive, int currentOption,
         display.setCursor(8, 15);
         display.print("Configuration:");
         display.setCursor(8, 30);
+
         if (serialModeActive)
         {
             display.print("Serial: ON");
@@ -219,11 +214,12 @@ void DisplayUtils::showSensorData(float magX, float magY, float magZ,
 // VISTA MODERNA
 //
 // Layout (128x64):
-//   y  0-10  X / Y / Z en 3 columnas (x = 0, 43, 86); en negativo si su delta > 175
-//   y 13-44  grafica de |B| a todo el ancho (21 muestras = 10 s), zoom automatico
-//   y 46-53  |B| (izq) y rango vertical de la grafica (der)
-//   y 55-63  Δ <eje>:<valor> (izq) y OK / WARNING / MAGNETIZED (der),
-//            en barra inversa y parpadeante si MAGNETIZED
+// y 0-10 X / Y / Z en 3 columnas (x = 0, 43, 86); en negativo si su delta > 175
+// y 13-44 grafica de dB (|B| - referencia) a todo el ancho (21 muestras = 10 s),
+// escala fija 0..225 uT, con el 0 en la base
+// y 46-53 dB (izq) y rango fijo de la grafica (der)
+// y 55-63 Δ <eje>:<valor> (izq) y OK / WARNING / MAGNETIZED (der),
+// en barra inversa y parpadeante si MAGNETIZED
 // ---------------------------------------------------------------------------
 void DisplayUtils::showSensorDataModern(float magX, float magY, float magZ,
                                         float prevX, float prevY, float prevZ,
@@ -234,18 +230,28 @@ void DisplayUtils::showSensorDataModern(float magX, float magY, float magZ,
     const float WARNING_THRESHOLD = 125.0f;
     const float MAGNETIZED_THRESHOLD = 175.0f;
 
-    // Historico de |B|: 21 muestras = 20 intervalos x 500 ms = 10 s,
+    // Historico de dB: 21 muestras = 20 intervalos x 500 ms = 10 s,
     // repartidas en los 128 px (127/20 = 6,35 px por intervalo)
     const int HIST_LEN = 21;
     const int GRAPH_TOP = 13;
     const int GRAPH_BOTTOM = 44;
     const int GRAPH_H = GRAPH_BOTTOM - GRAPH_TOP; // 31 px
-    const float MIN_SPAN = 20.0f;                 // uT: rango vertical minimo
+
+    // Escala vertical fija: 0 uT (abajo) .. 225 uT (arriba)
+    const float GRAPH_RANGE = 225.0f;
+    const float vmin = 0.0f;
+    const float vmax = GRAPH_RANGE;
+    const float span = vmax - vmin; // 225 uT
+
     static float history[HIST_LEN];
-    static int histHead = 0;  // proxima posicion a escribir
+    static int histHead = 0; // proxima posicion a escribir
     static int histCount = 0; // muestras validas
     static float lastX = 0, lastY = 0, lastZ = 0;
     static bool firstSample = true;
+
+    // Referencia fija: la primera lectura valida
+    static bool refInitialized = false;
+    static float referenceMagnitude = 0.0f;
 
     // Deltas (misma formula que antes)
     float deltaX = fabsf(magX - prevX);
@@ -271,11 +277,20 @@ void DisplayUtils::showSensorDataModern(float magX, float magY, float magZ,
 
     float magnitude = sqrtf(magX * magX + magY * magY + magZ * magZ);
 
+    if (readSuccess && !refInitialized)
+    {
+        referenceMagnitude = magnitude;
+        refInitialized = true;
+    }
+
+    // Desviacion respecto a la referencia, en valor absoluto (siempre >= 0)
+    float deltaMagnitude = fabsf(magnitude - referenceMagnitude);
+
     // Solo se anade al historico cuando hay una muestra nueva: esta funcion
     // puede llamarse mas rapido que el intervalo de medida (500 ms).
     if (readSuccess && (firstSample || magX != lastX || magY != lastY || magZ != lastZ))
     {
-        history[histHead] = magnitude;
+        history[histHead] = deltaMagnitude;
         histHead = (histHead + 1) % HIST_LEN;
         if (histCount < HIST_LEN)
             histCount++;
@@ -317,40 +332,24 @@ void DisplayUtils::showSensorDataModern(float magX, float magY, float magZ,
     drawAxis(43, 'Y', magY, deltaY > MAGNETIZED_THRESHOLD);
     drawAxis(86, 'Z', magZ, deltaZ > MAGNETIZED_THRESHOLD);
 
-    // ---- Grafica de |B| a todo el ancho ----
-    // Rango vertical automatico: zoom a min..max con un span minimo, para que
-    // las subidas y bajadas ocupen toda la altura de la grafica.
+    // ---- Grafica de dB a todo el ancho, escala fija 0..225 uT ----
     int start = (histHead - histCount + HIST_LEN) % HIST_LEN;
-    float vmin = history[start];
-    float vmax = history[start];
-    for (int i = 1; i < histCount; i++)
-    {
-        float v = history[(start + i) % HIST_LEN];
-        if (v < vmin)
-            vmin = v;
-        if (v > vmax)
-            vmax = v;
-    }
-    float span = vmax - vmin;
-    if (span < MIN_SPAN)
-    {
-        float mid = (vmax + vmin) / 2.0f;
-        vmin = mid - MIN_SPAN / 2.0f;
-        span = MIN_SPAN;
-    }
-    if (vmin < 0.0f)
-        vmin = 0.0f;
 
     // Referencias punteadas: techo y suelo del rango
-    for (int x = 0; x < 128; x += 4)
-    {
-        display.drawPixel(x, GRAPH_TOP);
-        display.drawPixel(x, GRAPH_BOTTOM);
-    }
+    //for (int x = 0; x < 128; x += 4)
+    //{
+    //    display.drawPixel(x, GRAPH_TOP);
+    //    display.drawPixel(x, GRAPH_BOTTOM);
+    //}
+
+    // Linea horizontal permanente en 0 uT (coincide con la base de la grafica)
+    int zeroY = GRAPH_BOTTOM -
+                (int)(((0.0f - vmin) / span) * GRAPH_H + 0.5f);
+    //display.drawLine(0, zeroY, 127, zeroY);
 
     // Linea continua, la muestra mas reciente en x=127 (con marcador)
     int prevPx = 0;
-    int prevPy = GRAPH_BOTTOM;
+    int prevPy = zeroY;
     for (int i = 0; i < histCount; i++)
     {
         float v = history[(start + i) % HIST_LEN];
@@ -359,12 +358,13 @@ void DisplayUtils::showSensorDataModern(float magX, float magY, float magZ,
             py = GRAPH_TOP;
         if (py > GRAPH_BOTTOM)
             py = GRAPH_BOTTOM;
-
         int px = 127 - ((histCount - 1 - i) * 127) / (HIST_LEN - 1);
+
         if (i > 0)
             display.drawLine(prevPx, prevPy, px, py);
         else
             display.drawPixel(px, py);
+
         prevPx = px;
         prevPy = py;
 
@@ -372,20 +372,17 @@ void DisplayUtils::showSensorDataModern(float magX, float magY, float magZ,
             display.drawBox(px - 2, py - 1, 3, 3);
     }
 
-    // ---- |B| (izq) y rango vertical de la grafica (der), misma unidad ----
-    bool useMilli = (magnitude >= 1000.0f);
+    // ---- dB (izq) y rango vertical fijo de la grafica (der) ----
+    bool useMilli = (fabsf(deltaMagnitude) >= 1000.0f);
     display.setFont(u8g2_font_6x10_tf);
     if (useMilli)
-        snprintf(buf, sizeof(buf), "|B| %.2f mT", magnitude / 1000.0f);
+        snprintf(buf, sizeof(buf), "dB %+.2f mT", deltaMagnitude / 1000.0f);
     else
-        snprintf(buf, sizeof(buf), "|B| %.0f uT", magnitude);
+        snprintf(buf, sizeof(buf), "dB %+.0f uT", deltaMagnitude);
     display.drawStr(0, 53, buf);
 
     display.setFont(u8g2_font_5x7_tf);
-    if (useMilli)
-        snprintf(buf, sizeof(buf), "%.2f..%.2f", vmin / 1000.0f, (vmin + span) / 1000.0f);
-    else
-        snprintf(buf, sizeof(buf), "%.0f..%.0f", vmin, vmin + span);
+    snprintf(buf, sizeof(buf), "0..225uT");
     display.drawStr(126 - display.getStrWidth(buf), 53, buf);
 
     // ---- Barra inferior: Δ a la izquierda, estado a la derecha ----
@@ -411,6 +408,7 @@ void DisplayUtils::showSensorDataModern(float magX, float magY, float magZ,
     const char *state = isMagnetized ? "MAGNETIZED" : (isWarning ? "WARNING" : "OK");
     int sx = 126 - display.getStrWidth(state);
     display.drawStr(sx, 63, state);
+
     if (isMagnetized)
         AlertSymbols::drawRadiation(display, sx - 13, 56);
     else if (isWarning)
@@ -526,7 +524,6 @@ void DisplayUtils::showSensorDataClassic(float magX, float magY, float magZ,
                 maxDelta = deltaZ;
                 maxAxis = 'Z';
             }
-
             bool isWarning = (maxDelta > 125.0f);
             bool isMagnetized = (maxDelta > 175.0f);
 
