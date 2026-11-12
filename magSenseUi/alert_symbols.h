@@ -7,7 +7,7 @@ class AlertSymbols
 {
 public:
     // Exclamation mark (3x8 px)
-    // Displayed next to the VU meter for WARNING (delta > 125 uT)
+    // Displayed next to the VU meter for WARNING (delta > warning threshold, default 125 uT)
     //
     //  ***
     //  ***
@@ -33,7 +33,7 @@ public:
 
     // Simplified radiation symbol (11x8 px)
     // Central circle + 3 radiating rays (0°, 120°, 240°)
-    // Displayed next to the VU meter for MAGNETIZED (delta > 175 uT)
+    // Displayed next to the VU meter for MAGNETIZED (delta > error threshold, default 175 uT)
     //
     //  \     /
     //   \   /
