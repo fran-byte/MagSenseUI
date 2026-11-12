@@ -15,9 +15,10 @@ The program includes an intuitive **menu** system that allows users to configure
 
 - Real-time 3-axis magnetic field monitoring
 - Configurable MLX90393 gain levels
+- Configurable graph range, WARNING threshold and MAGNETIZED (error) threshold
 - OLED user interface with two selectable views (Modern and Classic)
 - Diagnostic line showing the axis with the largest field variation (Δ)
-- EEPROM storage of gain and selected view
+- EEPROM storage of gain, selected view and ranges
 - Serial streaming for PC logging
 - Portable diagnostic operation
 - Detection of residual bearing magnetization
@@ -62,9 +63,22 @@ The program includes an intuitive **menu** system that allows users to configure
 9. Enable Serial Output
 10. View: Modern
 11. View: Classic
+12. Range: 225 uT      (graph full scale)
+13. Warn: 125 uT       (WARNING threshold)
+14. Error: 175 uT      (MAGNETIZED threshold)
 ```
 
 Options 1-8 set the sensor gain, option 9 enables serial streaming and options 10-11 select the measurement screen (see [Display Views](#display-views)). The selected view is applied immediately and stored in EEPROM. If the menu times out while the cursor is on a view option, that view is not applied.
+
+Options 12-14 are numeric values. Press SELECT to edit (the value is shown as `<125>`), UP increases and DOWN decreases, SELECT saves it to EEPROM and returns to the list. If the menu times out during an edit, the change is discarded.
+
+| Option | Default | Range | Step |
+|--------|--------:|-------|-----:|
+| Range (graph full scale) | 225 uT | 25 - 1000 uT | 25 uT |
+| Warn | 125 uT | 5 uT - (Error - 5) | 5 uT |
+| Error | 175 uT | (Warn + 5) - 1000 uT | 5 uT |
+
+Warning is always lower than Error: the editor limits each value accordingly.
 
 
 
@@ -146,7 +160,7 @@ The MLX90393 features a wide dynamic range and programmable gain, allowing it to
 
 The MLX90393 provides a maximum resolution of approximately 0.161 µT/LSB. Measurements near this limit may be affected by sensor noise and environmental magnetic interference.
 
-<img src="mlx90393.jpg" width="30%">
+<img src="mlx90393.jpg" width="50%">
 
 
 ---
@@ -169,7 +183,6 @@ This **1.3-inch OLED** display uses the **SH1106** driver and communicates via I
 
 <img src="doc/video.png" width="70%">
 <img src="doc/sensando.png" width="70%">
-<img src="doc/show2.png" width="70%">
 <img src="doc/3.png" width="70%">
 <img src="doc/2.jpg" width="70%">
 
@@ -197,13 +210,13 @@ This **1.3-inch OLED** display uses the **SH1106** driver and communicates via I
 ## 🚀 **How to Use**
 
 1. Upload the `MagSenseUI.ino` sketch to your Arduino.
-2. Use the buttons to navigate the OLED menu and select gain levels.
-3. Gain and view settings are saved to EEPROM (gain at address 0, view at address 1). On a blank EEPROM the Modern view is used.
+2. At power-up, press SET during the 3-second countdown to enter the setup menu, then use the buttons to navigate it and select gain levels or the display view. Without a SET press, the device skips the menu and starts measuring.
+3. Gain and view settings are saved to EEPROM (gain at address 0, view at address 1, range/warn/error as 16-bit values at addresses 2, 4 and 6). On a blank or invalid EEPROM the Modern view and the default values 225/125/175 µT are used.
 4. Optionally enable Serial Mode to stream real-time magnetic field data (X, Y, Z in µT) to a PC.
 
 ## 🚀 Operation
 
-When powered on, MagSenseUI enters a brief configuration period during which the user can navigate through the menu using the push buttons and select the desired sensor gain. The selected gain is automatically restored from EEPROM, allowing the device to retain its previous configuration after a power cycle.
+When powered on, MagSenseUI shows the intro screens and then a 3-second countdown with the message `Press SET for setup`. Pressing SET (or holding it during start-up) opens the configuration menu, where the user can navigate with the push buttons and select the sensor gain, the serial output or the display view. If SET is not pressed, the countdown ends and the device starts measuring directly with the stored settings. The selected gain is automatically restored from EEPROM, allowing the device to retain its previous configuration after a power cycle.
 
 Once the configuration phase has finished, the system begins continuously monitoring the magnetic field on the X, Y and Z axes.
 
@@ -213,11 +226,11 @@ Every 500 ms, a new measurement is taken and compared with the previous one. The
 
 MagSenseUI compares each measurement with the previous one and calculates the magnetic field variation (Δ).
 
-- Δ ≤ 125 µT: Normal condition.
-- Δ > 125 µT: Warning (triangle with `!`). Small magnetic disturbance detected.
-- Δ > 175 µT: Magnetized (radiation symbol). Significant magnetic disturbance detected, indicating probable residual magnetization in the inspected component.
+- Δ ≤ Warn (default 125 µT): Normal condition.
+- Δ > Warn (default 125 µT): Warning (triangle with `!`). Small magnetic disturbance detected.
+- Δ > Error (default 175 µT): Magnetized (radiation symbol). Significant magnetic disturbance detected, indicating probable residual magnetization in the inspected component.
 
-The warning symbol indicates a moderate magnetic field variation, while the radiation symbol indicates a stronger variation that may be caused by a significantly magnetized nearby component. Thresholds are the same in both views.
+The warning symbol indicates a moderate magnetic field variation, while the radiation symbol indicates a stronger variation that may be caused by a significantly magnetized nearby component. Thresholds are configurable from the menu and are the same in both views.
 
 This method allows technicians to quickly identify components exhibiting residual magnetization, even when operating within strong background magnetic fields generated by permanent magnets.
 
@@ -229,17 +242,13 @@ The measurement screen can be switched from the menu (`View: Modern` / `View: Cl
 
 ```plaintext
 X +1234   Y +0987   Z  -456
-┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
-      |B| history graph
-┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
-|B| 1620 uT            1580..1640
+      Δ history graph
 Δ Y:188              MAGNETIZED
 ```
 
 - **X / Y / Z**: current field on each axis in µT.
-- **Graph**: history of the total field magnitude |B| over the last 10 s (21 samples, one every 500 ms), across the full display width. The vertical range zooms automatically to the min..max of the history, with a minimum span of 20 µT, so small variations stay visible. Dotted lines mark the top and bottom of the range and a marker shows the latest sample.
-- **|B|**: magnitude of the field vector, |B| = √(X² + Y² + Z²), in µT (shown in mT above 1000 µT). It does not depend on the sensor orientation. The vertical range of the graph is shown on the right.
-- **Bottom bar**: on the left, the Δ of the axis with the largest variation (`Δ Y:188`); `Δ --:0` if no axis exceeds 125 µT. On the right, the status: `OK`, `WARNING` or `MAGNETIZED`. In the magnetized state the bar is inverted and blinks every 500 ms.
+- **Graph**: history of the largest per-axis variation Δ (the same value shown in the bottom bar) over the last 10 s (21 samples, one every 500 ms), across the full display width. Fixed vertical scale from 0 µT (base) to the configured *Range* (default 225 µT); Δ is always positive, so the line rests on the base with no variation and rises when the field changes. Only the curve is drawn (no reference lines), with a marker on the latest sample. Because Δ is a change between consecutive samples, it works the same inside a large constant background field.
+- **Bottom bar**: on the left, the Δ of the axis with the largest variation (`Δ Y:188`); it always shows the axis with the largest variation, whatever the status. On the right, the status: `OK`, `WARNING` or `MAGNETIZED`. In the magnetized state the bar is inverted and blinks every 500 ms.
 - The selected gain is not shown in this view.
 
 #### Classic view
@@ -247,11 +256,11 @@ X +1234   Y +0987   Z  -456
 Each axis shows its value and a six-segment bar graph that represents the magnitude of the field variation.
 
 - 0 bars: No significant variation detected.
-- 6 bars: Variation greater than approximately 125 µT (each bar is about 21 µT).
-- Warning symbol: Variation above 125 µT on that axis.
-- Radiation symbol: Variation above 175 µT on that axis.
+- 6 bars: Variation equal to or greater than the Warn threshold (each bar is Warn/6; about 21 µT with the default 125 µT).
+- Warning symbol: Variation above the Warn threshold on that axis.
+- Radiation symbol: Variation above the Error threshold on that axis.
 
-The bottom line shows the Δ of the axis with the largest variation on the left (`Δ Y:188`, or `Δ --:0` if none exceeds 125 µT) and the status (`OK`, `WARNING`, `MAGNETIZED`) on the right.
+The bottom line shows the Δ of the axis with the largest variation on the left (`Δ Y:188`; always shown, whatever the status) and the status (`OK`, `WARNING`, `MAGNETIZED`) on the right.
 
 ## Validation Results
 
