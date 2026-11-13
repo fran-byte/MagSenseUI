@@ -10,8 +10,8 @@ class MenuManager
 {
 private:
     // Identificadores de opcion (no son posiciones en pantalla):
-    // 0-7 ganancia, 8 serie, 9-10 vista, 11-13 rangos,
-    // 14 entrada "Gain" del menu principal, 15 "< Back" del submenu de ganancia
+    // 0-7 ganancia, 8 serie, 9-10 vista, 11-14 valores numericos,
+    // 15 entrada "Gain" del menu principal, 16 "< Back" del submenu de ganancia
     enum
     {
         OPT_SERIAL = 8,
@@ -20,8 +20,9 @@ private:
         OPT_RANGE = 11, // rango vertical de la grafica (uT)
         OPT_WARN = 12,  // umbral WARNING (uT)
         OPT_ERROR = 13, // umbral MAGNETIZED / error (uT)
-        OPT_GAIN_MENU = 14,
-        OPT_BACK = 15
+        OPT_INTERVAL = 14, // intervalo entre tomas (ms)
+        OPT_GAIN_MENU = 15,
+        OPT_BACK = 16
     };
 
     // Niveles del menu
@@ -31,13 +32,13 @@ private:
         LEVEL_GAIN = 1  // 8 ganancias + Back
     };
 
-    static const int MAIN_SIZE = 7; // posiciones del menu principal
+    static const int MAIN_SIZE = 8; // posiciones del menu principal
     static const int GAIN_SIZE = 9; // 8 ganancias + Back
 
     // Etiquetas por identificador de opcion (tambien las usa showSummary)
-    static char valueLabels[3][20]; // etiquetas dinamicas de 11-13
+    static char valueLabels[4][20]; // etiquetas dinamicas de 11-14
     static char gainEntryLabel[20]; // "Gain 2X >" (entrada del menu principal)
-    static const char *gainLabels[14];
+    static const char *gainLabels[15];
     static const mlx90393_gain gainValues[8];
     static const int visibleMenuOptions;
 
@@ -82,10 +83,10 @@ public:
 };
 
 // Static constant definitions
-char MenuManager::valueLabels[3][20] = {"", "", ""};
+char MenuManager::valueLabels[4][20] = {"", "", "", ""};
 char MenuManager::gainEntryLabel[20] = "";
 
-const char *MenuManager::gainLabels[14] = {
+const char *MenuManager::gainLabels[15] = {
     "Gain 1X",
     "Gain 1.33X",
     "Gain 1.67X",
@@ -99,7 +100,8 @@ const char *MenuManager::gainLabels[14] = {
     "View: Classic",
     valueLabels[0], // Range: 225 uT
     valueLabels[1], // Warn: 125 uT
-    valueLabels[2]  // Error: 175 uT
+    valueLabels[2], // Error: 175 uT
+    valueLabels[3]  // Interval: 500 ms
 };
 
 const mlx90393_gain MenuManager::gainValues[8] = {
@@ -143,7 +145,7 @@ int MenuManager::optionAt(int pos)
     {
         static const int mainOptions[MAIN_SIZE] = {
             OPT_GAIN_MENU, OPT_SERIAL, OPT_VIEW_MODERN, OPT_VIEW_CLASSIC,
-            OPT_RANGE, OPT_WARN, OPT_ERROR};
+            OPT_RANGE, OPT_WARN, OPT_ERROR, OPT_INTERVAL};
         return mainOptions[pos];
     }
     return (pos < 8) ? pos : (int)OPT_BACK;
@@ -181,6 +183,8 @@ int MenuManager::currentValueOf(int option)
         return SensorManager::getRange();
     if (option == OPT_WARN)
         return SensorManager::getWarning();
+    if (option == OPT_INTERVAL)
+        return SensorManager::getInterval();
     return SensorManager::getError();
 }
 
@@ -192,6 +196,12 @@ void MenuManager::editBounds(int option, int &lo, int &hi, int &step)
         lo = SensorManager::RANGE_MIN;
         hi = SensorManager::RANGE_MAX;
         step = SensorManager::RANGE_STEP;
+    }
+    else if (option == OPT_INTERVAL)
+    {
+        lo = SensorManager::INTERVAL_MIN;
+        hi = SensorManager::INTERVAL_MAX;
+        step = SensorManager::INTERVAL_STEP;
     }
     else if (option == OPT_WARN)
     {
@@ -211,17 +221,18 @@ void MenuManager::editBounds(int option, int &lo, int &hi, int &step)
 // En edicion, el valor que se esta editando se muestra entre < >.
 void MenuManager::refreshLabels()
 {
-    const char *names[3] = {"Range", "Warn", "Error"};
+    const char *names[4] = {"Range", "Warn", "Error", "Interval"};
+    const char *units[4] = {"uT", "uT", "uT", "ms"};
     int active = activeOption();
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 4; i++)
     {
         int opt = OPT_RANGE + i;
         bool edit = editing && active == opt;
         int v = edit ? editValue : currentValueOf(opt);
         if (edit)
-            snprintf(valueLabels[i], sizeof(valueLabels[i]), "%s: <%d> uT", names[i], v);
+            snprintf(valueLabels[i], sizeof(valueLabels[i]), "%s: <%d> %s", names[i], v, units[i]);
         else
-            snprintf(valueLabels[i], sizeof(valueLabels[i]), "%s: %d uT", names[i], v);
+            snprintf(valueLabels[i], sizeof(valueLabels[i]), "%s: %d %s", names[i], v, units[i]);
     }
 
     // Entrada del menu principal: muestra la ganancia vigente
@@ -254,11 +265,22 @@ void MenuManager::commitEdit()
         SensorManager::setRange(editValue);
     else if (id == OPT_WARN)
         SensorManager::setWarning(editValue);
+    else if (id == OPT_INTERVAL)
+        SensorManager::setInterval(editValue);
     else
         SensorManager::setError(editValue);
 
     SensorManager::saveRangesToEEPROM();
     applyRanges();
+
+    // Con otro intervalo, la Δ y el eje temporal de la grafica ya no son
+    // comparables con lo anterior: se empieza limpio.
+    if (id == OPT_INTERVAL)
+    {
+        SensorManager::tare();
+        Detector::reset();
+        DisplayUtils::clearHistory();
+    }
 }
 
 void MenuManager::handleMenuNavigation()

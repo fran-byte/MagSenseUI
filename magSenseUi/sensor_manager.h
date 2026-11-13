@@ -20,7 +20,13 @@ public:
         THR_MAX = 1000,
         THR_STEP = 5,
         WARN_DEFAULT = 125,
-        ERROR_DEFAULT = 175
+        ERROR_DEFAULT = 175,
+        // Intervalo entre tomas (ms). Minimo 100: con OSR 3 y filtro 5 el
+        // MLX90393 tarda ~50 ms o mas en cada conversion.
+        INTERVAL_MIN = 100,
+        INTERVAL_MAX = 2000,
+        INTERVAL_STEP = 50,
+        INTERVAL_DEFAULT = 500
     };
 
 private:
@@ -34,7 +40,7 @@ private:
 
     // Timing
     static unsigned long lastMeasurementTime;
-    static const unsigned long MEASUREMENT_INTERVAL;
+    static uint16_t measureInterval; // ms entre tomas (EEPROM 8-9)
 
     // Configuration
     static int currentGainIndex;
@@ -74,8 +80,13 @@ public:
     static void setRange(int v) { graphRange = (uint16_t)v; }
     static void setWarning(int v) { warnThreshold = (uint16_t)v; }
     static void setError(int v) { errorThreshold = (uint16_t)v; }
+    static int getInterval() { return measureInterval; }
+    static void setInterval(int v) { measureInterval = (uint16_t)v; }
     static void saveRangesToEEPROM();
     static void loadRangesFromEEPROM();
+
+    // Tara: la lectura actual pasa a ser la anterior (Δ = 0)
+    static void tare();
 };
 
 // Static variable initialization
@@ -89,7 +100,7 @@ float SensorManager::prevZ = 0;
 bool SensorManager::readSuccess = false;
 bool SensorManager::baselineSet = false;
 unsigned long SensorManager::lastMeasurementTime = 0;
-const unsigned long SensorManager::MEASUREMENT_INTERVAL = 500;
+uint16_t SensorManager::measureInterval = SensorManager::INTERVAL_DEFAULT;
 int SensorManager::currentGainIndex = 0;
 bool SensorManager::serialModeActive = false;
 int SensorManager::viewMode = 0;
@@ -100,7 +111,7 @@ uint16_t SensorManager::errorThreshold = SensorManager::ERROR_DEFAULT;
 // Implementations
 void SensorManager::begin()
 {
-    EEPROM.begin(8); // 0 = ganancia, 1 = vista, 2-3 rango, 4-5 warning, 6-7 error
+    EEPROM.begin(10); // 0 ganancia, 1 vista, 2-3 rango, 4-5 warning, 6-7 error, 8-9 intervalo
     loadGainFromEEPROM();
     loadViewFromEEPROM();
     loadRangesFromEEPROM();
@@ -121,7 +132,7 @@ void SensorManager::update()
 {
     unsigned long now = millis();
 
-    if (now - lastMeasurementTime >= MEASUREMENT_INTERVAL)
+    if (now - lastMeasurementTime >= measureInterval)
     {
         lastMeasurementTime = now;
 
@@ -209,11 +220,19 @@ void SensorManager::loadViewFromEEPROM()
     viewMode = (EEPROM.read(1) == 1) ? 1 : 0;
 }
 
+void SensorManager::tare()
+{
+    prevX = magX;
+    prevY = magY;
+    prevZ = magZ;
+}
+
 void SensorManager::saveRangesToEEPROM()
 {
     EEPROM.put(2, graphRange);
     EEPROM.put(4, warnThreshold);
     EEPROM.put(6, errorThreshold);
+    EEPROM.put(8, measureInterval);
     EEPROM.commit();
 }
 
@@ -242,6 +261,12 @@ void SensorManager::loadRangesFromEEPROM()
         warnThreshold = WARN_DEFAULT;
         errorThreshold = ERROR_DEFAULT;
     }
+
+    // El intervalo se valida aparte: una EEPROM de una version anterior tiene
+    // 0xFFFF aqui y los rangos siguen siendo validos.
+    uint16_t iv = 0;
+    EEPROM.get(8, iv);
+    measureInterval = (iv >= INTERVAL_MIN && iv <= INTERVAL_MAX) ? iv : INTERVAL_DEFAULT;
 }
 
 #endif
