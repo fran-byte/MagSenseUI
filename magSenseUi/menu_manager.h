@@ -76,7 +76,7 @@ public:
     static void handleMenuNavigation();
     static void enterMenuMode();
     static void returnToMenu();
-    static bool waitForSetup(int seconds = 3);
+    static bool waitForSetup(int seconds = 4);
     static bool isInMenuMode() { return inMenuMode; }
     static int getCurrentOption() { return activeOption(); }
     static const char *const *getGainLabels() { return gainLabels; }
@@ -427,22 +427,21 @@ void MenuManager::handleMenuNavigation()
     }
 }
 
-// Cuenta atras de arranque. Devuelve true si se pulsa SET (entrar en
-// configuracion); false si termina la cuenta y se sigue con el valor guardado.
+// Animacion de arranque (la secuencia dura 4 s; ver showSetupAnimation).
+// Devuelve true si se pulsa SET (entrar en configuracion); false si termina y
+// se sigue con el valor guardado.
 bool MenuManager::waitForSetup(int seconds)
 {
-    for (int s = seconds; s > 0; s--)
-    {
-        DisplayUtils::showSetupPrompt(s);
+    unsigned long start = millis();
+    unsigned long duration = (unsigned long)seconds * 1000UL;
+    unsigned long elapsed;
 
-        unsigned long start = millis();
-        while (millis() - start < 1000)
-        {
-            ButtonHandler::update();
-            if (ButtonHandler::wasSelectPressed())
-                return true;
-            delay(5);
-        }
+    while ((elapsed = millis() - start) < duration)
+    {
+        ButtonHandler::update();
+        if (ButtonHandler::wasSelectPressed())
+            return true;
+        DisplayUtils::showSetupAnimation(elapsed);
     }
     return false;
 }

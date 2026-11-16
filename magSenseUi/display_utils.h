@@ -66,8 +66,7 @@ private:
 public:
     static void begin();
     static void showIntro();
-    static void showMagnetic();
-    static void showSetupPrompt(int secondsLeft);
+    static void showSetupAnimation(unsigned long ms);
     static void showErrorMessage(const char *msg);
     static void showMenu(const char *const labels[], int totalOptions,
                          int currentOption, int scrollOffset,
@@ -158,24 +157,20 @@ void DisplayUtils::drawToast()
     display.drawStr(x, 38, msg);
 }
 
+// Intro: nombre a la izquierda ("Fran" y debajo "Byte", alineados a la
+// izquierda) y el dibujo del iman (64x64) en la mitad derecha, a la vez.
 void DisplayUtils::showIntro()
 {
     display.firstPage();
     do
     {
-        display.setFont(u8g2_font_logisoso20_tr);
-        display.drawStr(4, 40, "Fran-Byte");
-    } while (display.nextPage());
-    delay(1000);
-}
+        display.setDrawColor(1);
+        display.setFont(u8g2_font_logisoso16_tr);
+        display.drawStr(4, 30, "Fran");
+        display.drawStr(4, 52, "Byte");
 
-void DisplayUtils::showMagnetic()
-{
-    display.firstPage();
-    do
-    {
         display.drawXBMP(
-            32, 0,
+            128 - IMAN128F_WIDTH, 0,
             IMAN128F_WIDTH,
             IMAN128F_HEIGHT,
             imanAscii128x64_fixed);
@@ -183,25 +178,78 @@ void DisplayUtils::showMagnetic()
     delay(3000);
 }
 
-// Pantalla de arranque: invita a entrar en configuracion y muestra la cuenta
-// atras en digitos grandes (logisoso32, 32 px de alto).
-void DisplayUtils::showSetupPrompt(int secondsLeft)
+// Pantalla de arranque: ojos animados con "SET for setup" debajo.
+// Cada fotograma depende solo del tiempo transcurrido (ms desde el inicio, de
+// 0 a 4000) y no usa delay(): asi el boton SET se puede leer mientras dura.
+//
+// Secuencia: mira al frente, parpadeo, izquierda, derecha, arriba, "confuso"
+// (cada ojo hacia un lado), parpadeo final.
+void DisplayUtils::showSetupAnimation(unsigned long ms)
 {
-    char num[2] = {(char)('0' + secondsLeft), 0};
+    const int EYE_R = 16;   // radio del ojo
+    const int PUPIL_R = 7;  // radio de la pupila
+    const int EYE_XR = 35;  // centro x de cada ojo
+    const int EYE_XL = 93;
+    const int EYE_Y = 28;   // centro y: ojos en y 12..44, texto debajo
 
-    display.firstPage();
-    do
+    // Desplazamiento de cada pupila y semialto del ojo (EYE_R = abierto)
+    int plh = 0, prh = 0, plv = 0;
+    int ry = EYE_R;
+
+    // Parpadeo: el ojo se cierra y se abre dentro de [from, to)
+    auto blink = [&](unsigned long from, unsigned long to)
     {
+        float p = (float)(ms - from) / (float)(to - from);
+        ry = 1 + (int)((EYE_R - 1) * fabsf(2.0f * p - 1.0f));
+    };
+
+    if (ms < 300)
+        ; // centro
+    else if (ms < 900)
+        blink(300, 900);
+    else if (ms < 1300)
+        plh = prh = -5; // izquierda
+    else if (ms < 1700)
+        plh = prh = 5; // derecha
+    else if (ms < 2100)
+        plv = -5; // arriba
+    else if (ms < 2400)
+        ; // centro
+    else if (ms < 2800)
+    {
+        plh = -5; // confuso
+        prh = 5;
+    }
+    else if (ms < 3200)
+    {
+        plh = 5;
+        prh = -5;
+    }
+    else if (ms < 3500)
+        ; // centro
+    else if (ms < 4000)
+        blink(3500, 4000);
+
+    display.clearBuffer();
+    display.setDrawColor(1);
+
+    display.drawFilledEllipse(EYE_XR, EYE_Y, EYE_R, ry);
+    display.drawFilledEllipse(EYE_XL, EYE_Y, EYE_R, ry);
+
+    // Pupilas en negro, solo con el ojo abierto
+    if (ry >= EYE_R)
+    {
+        display.setDrawColor(0);
+        display.drawDisc(EYE_XR + plh, EYE_Y + plv, PUPIL_R);
+        display.drawDisc(EYE_XL + prh, EYE_Y + plv, PUPIL_R);
         display.setDrawColor(1);
-        display.drawFrame(0, 0, 128, 64);
+    }
 
-        display.setFont(u8g2_font_6x10_tf);
-        const char *msg = "Press SET for setup";
-        display.drawStr((128 - display.getStrWidth(msg)) / 2, 14, msg);
+    display.setFont(u8g2_font_6x10_tf);
+    const char *msg = "SET for setup";
+    display.drawStr((128 - display.getStrWidth(msg)) / 2, 62, msg);
 
-        display.setFont(u8g2_font_logisoso32_tn);
-        display.drawStr((128 - display.getStrWidth(num)) / 2, 58, num);
-    } while (display.nextPage());
+    display.sendBuffer();
 }
 
 void DisplayUtils::showErrorMessage(const char *msg)

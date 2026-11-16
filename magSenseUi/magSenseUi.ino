@@ -29,10 +29,9 @@ void setup()
     MenuManager::begin();
     AlertLed::off();
 
-    DisplayUtils::showIntro();
-    DisplayUtils::showMagnetic();
+    DisplayUtils::showIntro(); // nombre + iman en una sola pantalla
 
-    // 3 s countdown: press SET to open the menu, otherwise start measuring
+    // 4 s de ojos animados: pulsar SET abre el menu, si no, empieza a medir
     // directly with the stored settings.
     if (MenuManager::waitForSetup())
     {
