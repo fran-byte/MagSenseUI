@@ -52,20 +52,14 @@ The program includes an intuitive **menu** system that allows users to configure
 ```plaintext
 [ Configuration Menu ]
 -----------------------
-1. Gain: 1X
-2. Gain: 1.33X
-3. Gain: 1.67X
-4. Gain: 2X
-5. Gain: 2.5X
-6. Gain: 3X
-7. Gain: 4X
-8. Gain: 5X
-9. Enable Serial Output
-10. View: Modern
-11. View: Classic
-12. Range: 225 uT      (graph full scale)
-13. Warn: 125 uT       (WARNING threshold)
-14. Error: 175 uT      (MAGNETIZED threshold)
+1. Gain: 5X
+2. Serial ON
+3. View: Modern
+4. View: Classic
+5. Range: 225 uT      (graph full scale)
+6. Warn: 125 uT       (WARNING threshold)
+7. Error: 175 uT      (MAGNETIZED threshold)
+8. Interval: 500 ms
 ```
 
 Options 1-8 set the sensor gain, option 9 enables serial streaming and options 10-11 select the measurement screen (see [Display Views](#display-views)). The selected view is applied immediately and stored in EEPROM. If the menu times out while the cursor is on a view option, that view is not applied.
