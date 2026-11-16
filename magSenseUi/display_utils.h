@@ -8,6 +8,12 @@
 #include <iman_bitmap.h>
 #include <detector.h>
 
+// Velocidad del bus I2C (pantalla + sensor). 400 kHz es el maximo de ambos;
+// si hay artefactos en pantalla (cables largos al sensor), probar 100000UL.
+#ifndef I2C_CLOCK_HZ
+#define I2C_CLOCK_HZ 400000UL
+#endif
+
 class DisplayUtils
 {
 public:
@@ -102,7 +108,7 @@ void DisplayUtils::begin()
     display.enableUTF8Print();
     // Bus I2C a 400 kHz (maximo del SH1106 y del MLX90393): una pantalla
     // completa de 1 KB tarda ~4x menos que a 100 kHz.
-    display.setBusClock(400000);
+    display.setBusClock(I2C_CLOCK_HZ);
 }
 
 void DisplayUtils::setViewMode(int mode)
@@ -399,22 +405,30 @@ void DisplayUtils::showSensorDataModern(float magX, float magY, float magZ,
             py = GRAPH_BOTTOM;
         int px = 127 - ((histCount - 1 - i) * 127) / (HIST_LEN - 1);
 
+        // Trazo de 2 px de grosor: la linea se dibuja dos veces, desplazada 1 px
+        // en vertical (tramos suaves) o en horizontal (tramos empinados).
+        // IMPORTANTE: el desplazamiento horizontal es +1, nunca -1. U8g2 usa
+        // coordenadas sin signo de 8 bits: x = -1 se convierte en 255 y dibuja
+        // una linea de 1 px a todo el ancho de la pantalla.
         if (i > 0)
         {
             display.drawLine(prevPx, prevPy, px, py);
-            display.drawLine(prevPx, prevPy, px, py);
+            if (abs(py - prevPy) > abs(px - prevPx))
+                display.drawLine(prevPx + 1, prevPy, px + 1, py);
+            else
+                display.drawLine(prevPx, prevPy + 1, px, py + 1);
         }
         else
         {
-            display.drawPixel(px, py);
-            display.drawPixel(px, py);
+            display.drawBox(px, py, 2, 2);
         }
 
         prevPx = px;
         prevPy = py;
 
+        // Marcador de la ultima muestra, mayor que el trazo para que se distinga
         if (i == histCount - 1)
-            display.drawBox(px - 2, py - 1, 3, 3);
+            display.drawBox(px - 3, py - 2, 4, 4);
     }
 
     // ---- Barra inferior: Δ a la izquierda, estado a la derecha ----

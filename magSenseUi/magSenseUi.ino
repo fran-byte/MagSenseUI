@@ -21,7 +21,7 @@ void setup()
 {
     Serial.begin(115200);
     Wire.begin(9, 10);
-    Wire.setClock(400000); // I2C rapido: pantalla y MLX90393 lo admiten
+    Wire.setClock(I2C_CLOCK_HZ); // ver display_utils.h (400 kHz por defecto)
 
     DisplayUtils::begin();
     ButtonHandler::begin();
