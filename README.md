@@ -1,5 +1,6 @@
-# MagSenseUI
 
+
+# MagSenseUI
 # Diagnostic Tool for Residual Magnetization Detection
 
 ![magsense](magsense.png)
@@ -16,11 +17,7 @@ The program includes an intuitive **menu** system that allows users to configure
 - Configurable MLX90393 gain levels
 - Configurable graph range, WARNING threshold and MAGNETIZED (error) threshold
 - OLED user interface with two selectable views (Modern and Classic)
-- Diagnostic line showing the axis with the largest field variation (Δ), with peak hold
-- Hysteresis on the thresholds (no OK/WARNING flicker)
-- Tare button (UP) to restart the measurement from zero
-- RGB LED status indicator (green / amber / blinking red)
-- Display refresh limited to ~20 fps, I²C at 400 kHz
+- Diagnostic line showing the axis with the largest field variation (Δ)
 - EEPROM storage of gain, selected view and ranges
 - Serial streaming for PC logging
 - Portable diagnostic operation
@@ -28,18 +25,23 @@ The program includes an intuitive **menu** system that allows users to configure
 
 ## 🧰 **Hardware Components**
 
-| Component                           | Description                              |
-| ----------------------------------- | ---------------------------------------- |
-| [Arduino ESP32](doc/esp32.webp)     | Microcontroller ESP32-S3 Super Mini      |
-| [OLED Display 1.3"](doc/SH1106.pdf) | SH1106-based I2C monochrome display      |
-| [MLX90393 Sensor](doc/MLX90393.PDF) | 3-axis magnetometer with adjustable gain |
-| Push Buttons (x3)                   | For menu navigation and selection        |
+| Component         | Description                                      |
+|------------------|--------------------------------------------------|
+| [Arduino ESP32](doc/esp32.webp)      | Microcontroller ESP32-S3 Super Mini                    |
+| [OLED Display 1.3"](doc/SH1106.pdf) | SH1106-based I2C monochrome display             |
+| [MLX90393 Sensor](doc/MLX90393.PDF)   | 3-axis magnetometer with adjustable gain        |
+| Push Buttons (x3) | For menu navigation and selection               |
+
+
+
+
 
 ![diagram](doc/x.jpg)
 
 ![diagram](doc/scheme0.png)
 
 ![diagram](doc/scheme1.png)
+
 
 - Although the sensor appears to be mounted on the PCB, it is actually connected to it by wires in order to improve its performance and maneuverability.
 
@@ -48,34 +50,37 @@ The program includes an intuitive **menu** system that allows users to configure
 ## 🧭 **Menu System**
 
 ```plaintext
-[ MagSenseUI ]                [ Gain ]
------------------------       -----------------------
-Gain 2X >   ---------------->  Gain 1X
-Serial ON                      Gain 1.33X
-View: Modern                   Gain 1.67X
-View: Classic                  Gain 2X
-Range: 225 uT                  Gain 2.5X
-Warn: 125 uT                   Gain 3X
-Error: 175 uT                  Gain 4X
-Interval: 500 ms
-                               Gain 5X
-                               < Back
+[ Configuration Menu ]
+-----------------------
+1. Gain: 1X
+2. Gain: 1.33X
+3. Gain: 1.67X
+4. Gain: 2X
+5. Gain: 2.5X
+6. Gain: 3X
+7. Gain: 4X
+8. Gain: 5X
+9. Enable Serial Output
+10. View: Modern
+11. View: Classic
+12. Range: 225 uT      (graph full scale)
+13. Warn: 125 uT       (WARNING threshold)
+14. Error: 175 uT      (MAGNETIZED threshold)
 ```
 
-The main menu has 7 entries. `Gain` (which shows the current gain) opens a submenu with the 8 gain levels and `< Back`; picking a gain applies it, saves it to EEPROM and leaves the menu. `Serial ON` enables serial streaming, `View: Modern` / `View: Classic` select the measurement screen (see [Display Views](#display-views)), and `Range`, `Warn`, `Error` and `Interval` are numeric values. The selected view is applied immediately and stored in EEPROM. If the menu times out while the cursor is on a view option, that view is not applied.
+Options 1-8 set the sensor gain, option 9 enables serial streaming and options 10-11 select the measurement screen (see [Display Views](#display-views)). The selected view is applied immediately and stored in EEPROM. If the menu times out while the cursor is on a view option, that view is not applied.
 
-To edit a numeric value press SELECT (the value is shown as `<125>`), UP increases and DOWN decreases, SELECT saves it to EEPROM and returns to the list. If the menu times out during an edit, the change is discarded.
+Options 12-14 are numeric values. Press SELECT to edit (the value is shown as `<125>`), UP increases and DOWN decreases, SELECT saves it to EEPROM and returns to the list. If the menu times out during an edit, the change is discarded.
 
-| Option                           | Default | Range                |  Step |
-| -------------------------------- | ------: | -------------------- | ----: |
-| Range (graph full scale)         |  225 uT | 25 - 1000 uT         | 25 uT |
-| Warn                             |  125 uT | 5 uT - (Error - 5)   |  5 uT |
-| Error                            |  175 uT | (Warn + 5) - 1000 uT |  5 uT |
-| Interval (time between readings) |  500 ms | 100 - 2000 ms        | 50 ms |
+| Option | Default | Range | Step |
+|--------|--------:|-------|-----:|
+| Range (graph full scale) | 225 uT | 25 - 1000 uT | 25 uT |
+| Warn | 125 uT | 5 uT - (Error - 5) | 5 uT |
+| Error | 175 uT | (Warn + 5) - 1000 uT | 5 uT |
 
 Warning is always lower than Error: the editor limits each value accordingly.
 
-`Interval` sets the time between readings, and therefore the time base of Δ (variation between two consecutive readings), of the graph (21 samples) and of the serial output. The minimum is 100 ms because the MLX90393 needs ~50 ms or more per conversion with the oversampling and filter in use. Changing it clears the graph, peaks and status. The peak-hold time (3 s) does not depend on the interval.
+
 
 ### 🧩 Problem Context
 
@@ -105,35 +110,36 @@ For readers unfamiliar with the technologies used in this project, detailed back
 
 ## 🔧 Technical Specifications
 
-### 🧠 ESP32 Mini
-
+### 🧠 ESP32 Mini  
 The **ESP32 Mini** is a compact, ultra-low-power microcontroller module based on the **ESP32** chip by Espressif. It’s ideal for embedded applications requiring Wi-Fi, Bluetooth, and high processing power in a small footprint.
 
-- **Microcontroller**: Dual-core Xtensa LX7 CPU (up to 240 MHz)
-- **Dimensions**: 22.52 × 18 mm
-- **Flash Memory**: 4 MB
-- **SRAM**: 512 KB
-- **ROM**: 384 KB
-- **Digital I/O Pins**: 11
-- **External Interrupt Pins**: 22
-- **Analog Input Pins**: 6
-- **PWM Output Pins**: 11
-- **Operating Voltage (logic and power)**: 3.3V
-- **Input Voltage (via regulator)**: 5V (e.g., via USB-UART adapter)
-- **Deep Sleep Current**: ~43 µA
-- **Connectivity**: Wi-Fi 802.11 b/g/n, Bluetooth v4.2 BR/EDR + BLE
-- **Security Features**: AES-128/256, RSA, HMAC, digital signatures, secure boot
-- **Onboard LED**: WS2812 RGB (programmable multicolor status LED)
-- **Interfaces**: UART, I2C, SPI, PWM, ADC, DAC
+- **Microcontroller**: Dual-core Xtensa LX7 CPU (up to 240 MHz)  
+- **Dimensions**: 22.52 × 18 mm  
+- **Flash Memory**: 4 MB  
+- **SRAM**: 512 KB  
+- **ROM**: 384 KB  
+- **Digital I/O Pins**: 11  
+- **External Interrupt Pins**: 22  
+- **Analog Input Pins**: 6  
+- **PWM Output Pins**: 11  
+- **Operating Voltage (logic and power)**: 3.3V  
+- **Input Voltage (via regulator)**: 5V (e.g., via USB-UART adapter)  
+- **Deep Sleep Current**: ~43 µA  
+- **Connectivity**: Wi-Fi 802.11 b/g/n, Bluetooth v4.2 BR/EDR + BLE  
+- **Security Features**: AES-128/256, RSA, HMAC, digital signatures, secure boot  
+- **Onboard LED**: WS2812 RGB (programmable multicolor status LED)  
+- **Interfaces**: UART, I2C, SPI, PWM, ADC, DAC  
 - **USB Interface**: Not built-in (requires external USB-to-Serial adapter for programming)
+
+
 
 <img src="doc/esp32.avif" width="80%">
 
 ---
 
 ### 🧲 MLX90393 Magnetic Sensor
-
 The **MLX90393** is a highly sensitive 3-axis magnetometer designed for precision magnetic field sensing.
+
 
 The MLX90393 features a wide dynamic range and programmable gain, allowing it to detect small magnetic field disturbances superimposed on much stronger background magnetic fields generated by sources such as neodymium magnets.
 
@@ -156,10 +162,10 @@ The MLX90393 provides a maximum resolution of approximately 0.161 µT/LSB. Measu
 
 <img src="mlx90393.jpg" width="50%">
 
+
 ---
 
 ### 🖥️ OLED Display 1.3" (SH1106)
-
 This **1.3-inch OLED** display uses the **SH1106** driver and communicates via I2C. It is perfect for compact UIs in embedded systems.
 
 - **Resolution**: 128 × 64 pixels
@@ -175,33 +181,37 @@ This **1.3-inch OLED** display uses the **SH1106** driver and communicates via I
 
 ### The only difference is the addition of extra GPIO pins reserved for future expansion. The firmware and sensing circuitry remain identical to Version 1.
 
+<img src="doc/video.png" width="70%">
 <img src="doc/sensando.png" width="70%">
-<img src="doc/grafica.png" width="70%">
 <img src="doc/3.png" width="70%">
 <img src="doc/2.jpg" width="70%">
 
+
 ## Wiring Diagram
+
 
 ## 🔌 Connect Components via I²C (ESP32 Mini)
 
-- **OLED Display (SH1106)**
-  - **SDA → GPIO9** PIN 11
-  - **SCL → GPIO10** PIN 12
+- **OLED Display (SH1106)**  
+  - **SDA → GPIO9**  PIN 11
+  - **SCL → GPIO10**  PIN 12
 
-- **MLX90393 Sensor**
-  - **SDA → GPIO9** PIN 11
-  - **SCL → GPIO10** PIN 12
+- **MLX90393 Sensor**  
+  - **SDA → GPIO9**  PIN 11
+  - **SCL → GPIO10**  PIN 12
 
-- **Push Buttons**
-  - **UP → GPIO5** PIN 7
-  - **DOWN → GPIO6** PIN 8
+- **Push Buttons**  
+  - **UP → GPIO5**  PIN 7
+  - **DOWN → GPIO6**  PIN 8
   - **SELECT → GPIO7** PIN 9
+
+
 
 ## 🚀 **How to Use**
 
 1. Upload the `MagSenseUI.ino` sketch to your Arduino.
 2. At power-up, press SET during the 3-second countdown to enter the setup menu, then use the buttons to navigate it and select gain levels or the display view. Without a SET press, the device skips the menu and starts measuring.
-3. Gain and view settings are saved to EEPROM (gain at address 0, view at address 1, range/warn/error/interval as 16-bit values at addresses 2, 4, 6 and 8). On a blank or invalid EEPROM the Modern view and the default values 225/125/175 µT and 500 ms are used.
+3. Gain and view settings are saved to EEPROM (gain at address 0, view at address 1, range/warn/error as 16-bit values at addresses 2, 4 and 6). On a blank or invalid EEPROM the Modern view and the default values 225/125/175 µT are used.
 4. Optionally enable Serial Mode to stream real-time magnetic field data (X, Y, Z in µT) to a PC.
 
 ## 🚀 Operation
@@ -210,7 +220,7 @@ When powered on, MagSenseUI shows the intro screens and then a 3-second countdow
 
 Once the configuration phase has finished, the system begins continuously monitoring the magnetic field on the X, Y and Z axes.
 
-Every _Interval_ (500 ms by default), a new measurement is taken and compared with the previous one. The system calculates the variation of the magnetic field for each axis and displays a visual indication of the detected disturbance level.
+Every 500 ms, a new measurement is taken and compared with the previous one. The system calculates the variation of the magnetic field for each axis and displays a visual indication of the detected disturbance level.
 
 ### Alert Levels
 
@@ -223,14 +233,6 @@ MagSenseUI compares each measurement with the previous one and calculates the ma
 The warning symbol indicates a moderate magnetic field variation, while the radiation symbol indicates a stronger variation that may be caused by a significantly magnetized nearby component. Thresholds are configurable from the menu and are the same in both views.
 
 This method allows technicians to quickly identify components exhibiting residual magnetization, even when operating within strong background magnetic fields generated by permanent magnets.
-
-### Peak hold, hysteresis, tare and LED
-
-- **Peak hold**: the Δ shown in the bottom bar (and the status, alarms and the classic VU bars) holds the peak of each axis for 3 s before dropping to the current value, so a short spike from a rotating bearing is not missed. The graph always plots the instantaneous Δ.
-- **Hysteresis**: a state is entered when Δ exceeds its threshold and only left when Δ falls 5% below it, so the status does not flicker around Warn or Error.
-- **Tare (UP button, while measuring)**: current reading becomes the new reference (Δ = 0), and the graph, held peaks and status are cleared. A `TARE` notice is shown for 1 s.
-- **LED (WS2812)**: green = OK, amber = WARNING, blinking red = MAGNETIZED (in sync with the inverted bar). It also works in serial mode and is off in the menu or on read error. The LED pin is `LED_PIN` in `alert_led.h` (GPIO48 by default on the ESP32-S3 Super Mini; check it on your board).
-- **Performance**: the measurement screen is redrawn at most every 50 ms and the I²C bus runs at 400 kHz.
 
 ### Display Views
 
@@ -245,7 +247,7 @@ X +1234   Y +0987   Z  -456
 ```
 
 - **X / Y / Z**: current field on each axis in µT.
-- **Graph**: history of the largest per-axis variation Δ (the same value shown in the bottom bar) over the last 21 samples (10 s with the default 500 ms interval), across the full display width. Fixed vertical scale from 0 µT (base) to the configured _Range_ (default 225 µT); Δ is always positive, so the line rests on the base with no variation and rises when the field changes. Only the curve is drawn (no reference lines), with a marker on the latest sample. Because Δ is a change between consecutive samples, it works the same inside a large constant background field.
+- **Graph**: history of the largest per-axis variation Δ (the same value shown in the bottom bar) over the last 10 s (21 samples, one every 500 ms), across the full display width. Fixed vertical scale from 0 µT (base) to the configured *Range* (default 225 µT); Δ is always positive, so the line rests on the base with no variation and rises when the field changes. Only the curve is drawn (no reference lines), with a marker on the latest sample. Because Δ is a change between consecutive samples, it works the same inside a large constant background field.
 - **Bottom bar**: on the left, the Δ of the axis with the largest variation (`Δ Y:188`); it always shows the axis with the largest variation, whatever the status. On the right, the status: `OK`, `WARNING` or `MAGNETIZED`. In the magnetized state the bar is inverted and blinks every 500 ms.
 - The selected gain is not shown in this view.
 
@@ -262,12 +264,12 @@ The bottom line shows the Δ of the axis with the largest variation on the left 
 
 ## Validation Results
 
-| Test Object       | Max Δ (µT) | Status     |
-| ----------------- | ---------: | ---------- |
-| Reference Bearing |         32 | Normal     |
-| Bearing A         |         94 | Normal     |
-| Bearing B         |        143 | Warning    |
-| Bearing C         |        221 | Magnetized |
+| Test Object | Max Δ (µT) | Status |
+|------------|-----------:|---------|
+| Reference Bearing | 32 | Normal |
+| Bearing A | 94 | Normal |
+| Bearing B | 143 | Warning |
+| Bearing C | 221 | Magnetized |
 
 📂 **Code**: [View Source Code](magSenseUi/)
 
@@ -278,3 +280,4 @@ This project is licensed under the MIT License.
 ## 🙌 Credits
 
 Developed by **Fran-Byte**. Based on Melexis magnetic sensors and Arduino libraries.
+
