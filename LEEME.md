@@ -55,9 +55,11 @@ El programa incorpora un sistema de **menú intuitivo** que permite a los usuari
 8. Interval: 500 ms
 ```
 
-Las opciones 1-8 configuran la ganancia del sensor, la opción 9 habilita la transmisión por puerto serie y las opciones 10-11 permiten seleccionar la pantalla de medición (ver [Vistas de Pantalla](#vistas-de-pantalla)). La vista seleccionada se aplica inmediatamente y se guarda en EEPROM. Si el menú expira mientras el cursor está sobre una opción de vista, la vista no se aplicará.
+Las opción 1 configuran la ganancia del sensor, la opción 2 habilita la transmisión por puerto serie y las opciones 3-4 permiten seleccionar la pantalla de medición (ver [Vistas de Pantalla](#vistas-de-pantalla)). La vista seleccionada se aplica inmediatamente y se guarda en EEPROM. Si el menú expira mientras el cursor está sobre una opción de vista, la vista no se aplicará.
 
-Las opciones 12-14 son valores numéricos. Pulse SELECT para editarlos (el valor se muestra como `<125>`), UP para aumentar y DOWN para disminuir. SELECT guarda el valor en EEPROM y vuelve a la lista. Si el menú expira durante la edición, los cambios se descartan.
+Las opciones 5-8 son valores numéricos. Pulse SELECT para editarlos (el valor se muestra como `<125>`), UP para aumentar y DOWN para disminuir.
+
+La opción SELECT guarda el valor en EEPROM y vuelve a la lista. Si el menú expira durante la edición, los cambios se descartan.
 
 | Opción | Valor por defecto | Rango | Incremento |
 |---------|-----------------:|--------|-----------:|
