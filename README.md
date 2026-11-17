@@ -5,7 +5,7 @@
 
 ![magsense](magsense.png)
 
-![Spanish version](LEEME.md)
+[Spanish version](LEEME.md)
 
 ## 🎯 Project Purpose
 
