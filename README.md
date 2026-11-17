@@ -62,9 +62,11 @@ The program includes an intuitive **menu** system that allows users to configure
 8. Interval: 500 ms
 ```
 
-Options 1-8 set the sensor gain, option 9 enables serial streaming and options 10-11 select the measurement screen (see [Display Views](#display-views)). The selected view is applied immediately and stored in EEPROM. If the menu times out while the cursor is on a view option, that view is not applied.
 
-Options 12-14 are numeric values. Press SELECT to edit (the value is shown as `<125>`), UP increases and DOWN decreases, SELECT saves it to EEPROM and returns to the list. If the menu times out during an edit, the change is discarded.
+
+Option 1 set the sensor gain, option 2 enables serial streaming and options 3-4 select the measurement screen (see [Display Views](#display-views)). The selected view is applied immediately and stored in EEPROM. If the menu times out while the cursor is on a view option, that view is not applied.
+
+Options 5-8 are numeric values. Press SELECT to edit (the value is shown as `<125>`), UP increases and DOWN decreases, SELECT saves it to EEPROM and returns to the list. If the menu times out during an edit, the change is discarded.
 
 | Option | Default | Range | Step |
 |--------|--------:|-------|-----:|
