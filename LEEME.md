@@ -198,7 +198,7 @@ Esta pantalla OLED de **1,3 pulgadas** utiliza el controlador **SH1106** y se co
 ## 🚀 Cómo Utilizarlo
 
 1. Cargue el sketch `MagSenseUI.ino` en su Arduino.
-2. Durante el arranque, pulse SET durante la cuenta atrás de 3 segundos para entrar en el menú de configuración. Utilice los botones para navegar y configurar la ganancia o la vista de pantalla. Si no se pulsa SET, el dispositivo omite el menú y comienza directamente las mediciones.
+2. Durante el arranque, puede pulsar SET para entrar en el menú de configuración. Utilice los botones para navegar y configurar la ganancia o la vista de pantalla. Si no se pulsa SET, el dispositivo omite el menú y comienza directamente las mediciones.
 3. La configuración de ganancia y vista se guarda en EEPROM (ganancia en la dirección 0, vista en la dirección 1 y Range/Warn/Error como valores de 16 bits en las direcciones 2, 4 y 6). En una EEPROM vacía o inválida se utilizarán la Vista Moderna y los valores predeterminados 225/125/175 µT.
 4. Opcionalmente puede habilitar el Modo Serie para transmitir datos en tiempo real (X, Y, Z en µT) hacia un PC.
 
