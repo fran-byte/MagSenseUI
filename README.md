@@ -5,6 +5,8 @@
 
 ![magsense](magsense.png)
 
+![Spanish version](LEEME.md)
+
 ## 🎯 Project Purpose
 
 The **MagSenseUI** project was developed to address a specific diagnostic challenge in electromechanical systems, particularly in machines like **Bill Validators** that rely on magnetic sensors for operation.
