@@ -207,7 +207,7 @@ This **1.3-inch OLED** display uses the **SH1106** driver and communicates via I
 ## 🚀 **How to Use**
 
 1. Upload the `MagSenseUI.ino` sketch to your Arduino.
-2. At power-up, press SET during the 3-second countdown to enter the setup menu, then use the buttons to navigate it and select gain levels or the display view. Without a SET press, the device skips the menu and starts measuring.
+2. At power-up, press SET to enter the setup menu, then use the buttons to navigate it and select gain levels or the display view. Without a SET press, the device skips the menu and starts measuring.
 3. Gain and view settings are saved to EEPROM (gain at address 0, view at address 1, range/warn/error as 16-bit values at addresses 2, 4 and 6). On a blank or invalid EEPROM the Modern view and the default values 225/125/175 µT are used.
 4. Optionally enable Serial Mode to stream real-time magnetic field data (X, Y, Z in µT) to a PC.
 
