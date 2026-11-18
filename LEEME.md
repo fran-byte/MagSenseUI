@@ -32,7 +32,7 @@ El programa incorpora un sistema de **menú intuitivo** que permite a los usuari
 
 ![diagram](doc/x.jpg)
 
-<img src="doc/scheme0.png" width="33%"> <img src="doc/scheme1.png" width="40%">
+<img src="doc/scheme0.png" width="36%"> <img src="doc/scheme1.png" width="40%">
 
 
 
