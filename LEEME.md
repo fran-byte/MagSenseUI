@@ -36,7 +36,7 @@ El programa incorpora un sistema de **menú intuitivo** que permite a los usuari
 
 ![diagram](doc/scheme1.png)
 
-- Aunque el sensor parece estar montado sobre la PCB, en realidad está conectado mediante cables para mejorar su rendimiento y maniobrabilidad.
+- El sensor está montado sobre y conectado mediante cables para mejorar su rendimiento y maniobrabilidad.
 
 - Otro aspecto importante es el uso de los jumpers J1 y J2, empleados para configurar las distintas versiones de las pantallas OLED de 1,3", ya que en algunas versiones los pines de alimentación están invertidos (positivo y negativo).
 
