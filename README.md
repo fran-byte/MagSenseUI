@@ -45,7 +45,7 @@ The program includes an intuitive **menu** system that allows users to configure
 ![diagram](doc/scheme1.png)
 
 
-- Although the sensor appears to be mounted on the PCB, it is actually connected to it by wires in order to improve its performance and maneuverability.
+- The sensor is actually connected to it by wires in order to improve its performance and maneuverability.
 
 - Another important point to consider is the use of jumpers J1 and J2, which are used to configure the different versions of the 1.3" OLED displays, as the power supply pins are reversed (positive and negative) in some versions.
 
