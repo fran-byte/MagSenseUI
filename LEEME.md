@@ -32,9 +32,7 @@ El programa incorpora un sistema de **menú intuitivo** que permite a los usuari
 
 ![diagram](doc/x.jpg)
 
-![diagram](doc/scheme0.png)
-
-![diagram](doc/scheme1.png)
+![diagram](doc/scheme0.png) ![diagram](doc/scheme1.png)
 
 - El sensor está montado sobre y conectado mediante cables para mejorar su rendimiento y maniobrabilidad.
 
