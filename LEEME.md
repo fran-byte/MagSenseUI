@@ -204,12 +204,6 @@ Esta pantalla OLED de **1,3 pulgadas** utiliza el controlador **SH1106** y se co
 
 ## 🚀 Funcionamiento
 
-Al encenderse, MagSenseUI muestra las pantallas de introducción y posteriormente una cuenta atrás de 3 segundos con el mensaje:
-
-```plaintext
-Press SET for setup
-```
-
 Pulsar SET (o mantenerlo pulsado durante el arranque) abre el menú de configuración, donde el usuario puede navegar mediante los pulsadores y seleccionar la ganancia del sensor, la salida serie o la vista de pantalla.
 
 Si no se pulsa SET, finaliza la cuenta atrás y el dispositivo comienza directamente las mediciones utilizando la configuración almacenada.
