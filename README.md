@@ -40,9 +40,7 @@ The program includes an intuitive **menu** system that allows users to configure
 
 ![diagram](doc/x.jpg)
 
-![diagram](doc/scheme0.png)
-
-![diagram](doc/scheme1.png)
+<img src="doc/scheme0.png" width="38%"> <img src="doc/scheme1.png" width="40%">
 
 
 - The sensor is actually connected to it by wires in order to improve its performance and maneuverability.
