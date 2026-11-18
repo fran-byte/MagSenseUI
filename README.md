@@ -215,7 +215,7 @@ This **1.3-inch OLED** display uses the **SH1106** driver and communicates via I
 
 ## 🚀 Operation
 
-When powered on, MagSenseUI shows the intro screens and then a 3-second countdown with the message `Press SET for setup`. Pressing SET (or holding it during start-up) opens the configuration menu, where the user can navigate with the push buttons and select the sensor gain, the serial output or the display view. If SET is not pressed, the countdown ends and the device starts measuring directly with the stored settings. The selected gain is automatically restored from EEPROM, allowing the device to retain its previous configuration after a power cycle.
+Pressing SET (or holding it during start-up) opens the configuration menu, where the user can navigate with the push buttons and select the sensor gain, the serial output or the display view. If SET is not pressed, the countdown ends and the device starts measuring directly with the stored settings. The selected gain is automatically restored from EEPROM, allowing the device to retain its previous configuration after a power cycle.
 
 Once the configuration phase has finished, the system begins continuously monitoring the magnetic field on the X, Y and Z axes.
 
