@@ -1,0 +1,65 @@
+# =====================================
+# Entornos virtuales
+# =====================================
+venv/
+.venv/
+env/
+ENV/
+virtualenv/
+*.egg-info/
+.eggs/
+
+# =====================================
+# Python
+# =====================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+develop-eggs/
+downloads/
+pip-wheel-metadata/
+MANIFEST
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# =====================================
+# IDEs / editores
+# =====================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# =====================================
+# Logs / temporales
+# =====================================
+*.log
+logs/
+*.tmp
+*.bak
+tmp/
+
+# =====================================
+# Datos y capturas del sensor
+# =====================================
+*.csv
+*.bin
+*.dat
+captures/
+recordings/
+
+# =====================================
+# Sistema operativo
+# =====================================
+.DS_Store
