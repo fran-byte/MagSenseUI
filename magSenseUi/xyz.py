@@ -2,40 +2,38 @@ import sys
 import re
 import time
 import serial
+import serial.tools.list_ports
 import numpy as np
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QHBoxLayout, QVBoxLayout, QLabel, QSizePolicy
+    QApplication, QWidget, QHBoxLayout, QVBoxLayout, QLabel, QSizePolicy,
+    QDialog, QComboBox, QLineEdit, QPushButton, QMessageBox, QFormLayout
 )
 from PyQt6.QtCore import QTimer, Qt
 import pyqtgraph.opengl as gl
 import pyqtgraph as pg
 
 # =====================================
-# PRESETS  (SIGMA -50%)
-# =====================================
-# =====================================
 # PRESETS  (SIGMA -50%, amplitud -30%)
 # =====================================
 PRESET = "DRAMATIC"
 
 if PRESET == "SOFT":
-    AMP_GAIN, MAX_AMP_PER_EVENT = 0.63, 38.5       # antes 0.9, 55.0
+    AMP_GAIN, MAX_AMP_PER_EVENT = 0.63, 38.5
     MIN_EVENT_DELTA = 2.0
     SIGMA, K_OSC_WAVELEN = 8.25, 20.0
 elif PRESET == "MEDIUM":
-    AMP_GAIN, MAX_AMP_PER_EVENT = 0.91, 56.0       # antes 1.3, 80.0
+    AMP_GAIN, MAX_AMP_PER_EVENT = 0.91, 56.0
     MIN_EVENT_DELTA = 1.5
     SIGMA, K_OSC_WAVELEN = 7.5, 20.0
 else:  # DRAMATIC
-    AMP_GAIN, MAX_AMP_PER_EVENT = 1.12, 70.0       # antes 1.6, 100.0
+    AMP_GAIN, MAX_AMP_PER_EVENT = 1.12, 70.0
     MIN_EVENT_DELTA = 1.0
     SIGMA, K_OSC_WAVELEN = 6.75, 20.0
 
 # =====================================
 # CONFIG
 # =====================================
-SERIAL_PORT = "/dev/ttyACM0"
-BAUDRATE    = 115200
+BAUDRATE = 115200
 
 POOL_W = 800
 POOL_D = 400
@@ -73,22 +71,130 @@ TINT_Z = np.array([0.22, 0.14, 0.18])
 BG_COLOR = pg.mkColor(4, 10, 26, 255)
 
 # =====================================
-# SERIE
+# DIÁLOGO DE ARRANQUE (SO + puerto)
 # =====================================
-try:
-    print("Abriendo puerto:", SERIAL_PORT)
-    ser = serial.Serial(SERIAL_PORT, BAUDRATE, timeout=0.02)
-    print("Puerto abierto correctamente")
-except Exception as e:
-    print(e); sys.exit()
+def ask_system_and_port():
+    """
+    Muestra un diálogo para elegir SO y puerto.
+    Devuelve (serial_instance, system_label, port_name) o (None, ...) si se cancela.
+    """
+    dlg = QDialog()
+    dlg.setWindowTitle("MagSenseUI — Configuración inicial")
+    dlg.setModal(True)
+    dlg.setMinimumWidth(460)
+
+    layout = QVBoxLayout(dlg)
+    layout.setContentsMargins(18, 18, 18, 18)
+    layout.setSpacing(10)
+
+    info = QLabel(
+        "<b>Selecciona el sistema y el puerto serie</b><br>"
+        "<span style='color:#888;'>El puerto es el que el ESP32 expone al conectarlo por USB.</span>"
+    )
+    layout.addWidget(info)
+
+    form = QFormLayout()
+    form.setSpacing(8)
+
+    # --- Selector SO ---
+    cb_os = QComboBox()
+    cb_os.addItems(["Linux", "Windows"])
+    # Default según plataforma real
+    if sys.platform.startswith("win"):
+        cb_os.setCurrentText("Windows")
+    else:
+        cb_os.setCurrentText("Linux")
+    form.addRow("Sistema operativo:", cb_os)
+
+    # --- Combo con puertos detectados + campo editable ---
+    cb_port = QComboBox()
+    cb_port.setEditable(True)
+    form.addRow("Puerto serie:", cb_port)
+
+    def refresh_ports():
+        """Re-escanea puertos y actualiza las sugerencias del combo."""
+        cb_port.clear()
+        detected = [p.device for p in serial.tools.list_ports.comports()]
+        os_now = cb_os.currentText()
+        defaults = ["/dev/ttyACM0", "/dev/ttyUSB0"] if os_now == "Linux" else ["COM5", "COM3", "COM4"]
+        items = detected if detected else defaults
+        for it in items:
+            cb_port.addItem(it)
+        # deja seleccionado el primero
+        if items:
+            cb_port.setCurrentText(items[0])
+
+    cb_os.currentTextChanged.connect(lambda _: refresh_ports())
+    refresh_ports()
+
+    # Botón para re-escanear puertos manualmente
+    btn_scan = QPushButton("🔄 Re-escanear puertos")
+    btn_scan.clicked.connect(refresh_ports)
+    form.addRow("", btn_scan)
+
+    layout.addLayout(form)
+
+    # --- Botonera ---
+    btn_box = QHBoxLayout()
+    btn_ok = QPushButton("Conectar")
+    btn_cancel = QPushButton("Cancelar")
+    btn_ok.setDefault(True)
+    btn_box.addStretch(1)
+    btn_box.addWidget(btn_ok)
+    btn_box.addWidget(btn_cancel)
+    layout.addLayout(btn_box)
+
+    result = {"ser": None, "system": None, "port": None}
+
+    def try_connect():
+        os_label = cb_os.currentText()
+        port = cb_port.currentText().strip()
+        if not port:
+            QMessageBox.warning(dlg, "Puerto vacío", "Introduce un puerto serie.")
+            return
+        print(f"Abriendo puerto: {port}  ({os_label})")
+        try:
+            s = serial.Serial(port, BAUDRATE, timeout=0.02)
+            result["ser"] = s
+            result["system"] = os_label
+            result["port"] = port
+            dlg.accept()
+        except Exception as e:
+            QMessageBox.critical(
+                dlg, "No se pudo abrir el puerto",
+                f"Puerto: {port}\n\nError:\n{e}\n\n"
+                f"Comprueba que:\n"
+                f"• El ESP32 está conectado por USB\n"
+                f"• En Linux tienes permisos (grupo 'dialout')\n"
+                f"• El puerto no está siendo usado por otro programa"
+            )
+
+    btn_ok.clicked.connect(try_connect)
+    btn_cancel.clicked.connect(dlg.reject)
+
+    if dlg.exec() != QDialog.DialogCode.Accepted:
+        return None, None, None
+    return result["ser"], result["system"], result["port"]
 
 # =====================================
-# APP + LAYOUT (3 filas apiladas)
+# APP + PREGUNTA INICIAL
 # =====================================
 app = QApplication(sys.argv)
 
+ser, SYSTEM_LABEL, PORT_NAME = ask_system_and_port()
+if ser is None:
+    print("Cancelado por el usuario.")
+    sys.exit(0)
+
+print(f"Puerto abierto correctamente: {PORT_NAME}  ({SYSTEM_LABEL})")
+
+# =====================================
+# VENTANA PRINCIPAL
+# =====================================
 main_window = QWidget()
-main_window.setWindowTitle(f"MagSenseUI 3D — 3 vistas sincronizadas  [{PRESET}]")
+main_window.setWindowTitle(
+    f"MagSenseUI 3D — 3 vistas  [{PRESET}]  [{SYSTEM_LABEL} · {PORT_NAME}]"
+)
 main_window.resize(1100, 1400)
 
 outer_layout = QVBoxLayout(main_window)
@@ -117,7 +223,7 @@ views_layout.setSpacing(6)
 outer_layout.addLayout(views_layout, stretch=1)
 
 # =====================================
-# CREAR 3 GLViewWidget (uno por fila)
+# CREAR 3 GLViewWidget
 # =====================================
 def make_view(title_text):
     container = QWidget()
@@ -162,7 +268,6 @@ views_layout.addWidget(container_z, stretch=1)
 # SINCRONIZACIÓN DE CÁMARAS
 # =====================================
 views = {'x': view_x, 'y': view_y, 'z': view_z}
-
 last_cam = {'x': None, 'y': None, 'z': None}
 
 def camera_signature(v):
@@ -174,7 +279,7 @@ def camera_signature(v):
     )
 
 # =====================================
-# MALLA (una por vista, plano horizontal en XZ del mundo)
+# MALLA
 # =====================================
 xx = np.linspace(-POOL_W/2, POOL_W/2, GRID_X)
 yy = np.linspace(-POOL_D/2, POOL_D/2, GRID_Y)
