@@ -17,9 +17,17 @@
 #include <detector.h>
 #include <alert_led.h>
 
+// Unica salida serie del proyecto: "Serial" por el USB-C (USB CDC nativo).
+// Con USB CDC On Boot desactivado, "Serial" saldria por los pines UART0 y el
+// monitor serie del IDE no veria nada, asi que no se deja compilar asi.
+#if (defined(CONFIG_IDF_TARGET_ESP32S3) || defined(ARDUINO_ESP32S3_DEV)) && \
+    !(defined(ARDUINO_USB_CDC_ON_BOOT) && (ARDUINO_USB_CDC_ON_BOOT == 1))
+#error "Activar Herramientas > USB CDC On Boot > Enabled (la salida serie va por el USB-C)"
+#endif
+
 void setup()
 {
-    Serial.begin(115200);
+    Serial.begin(115200); // USB-C
     Wire.begin(9, 10);
     Wire.setClock(I2C_CLOCK_HZ); // ver display_utils.h (400 kHz por defecto)
 

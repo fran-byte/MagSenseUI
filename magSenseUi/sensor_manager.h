@@ -166,6 +166,11 @@ void SensorManager::update()
             Serial.print(magZ, 2);
             Serial.println(" uT");
         }
+        else if (serialModeActive)
+        {
+            // Sin pantalla en modo serie, un fallo del sensor pasaria desapercibido
+            Serial.println("Read error");
+        }
     }
 }
 
@@ -190,6 +195,8 @@ void SensorManager::setGain(int gainIndex)
 void SensorManager::setSerialMode(bool mode)
 {
     serialModeActive = mode;
+    if (mode)
+        Serial.println("MagSenseUI: serial mode ON");
 }
 
 void SensorManager::saveGainToEEPROM()
