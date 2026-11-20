@@ -42,8 +42,8 @@ GRID_X = 110
 GRID_Y = 50
 
 HISTORY_SECONDS = 2.5
-X_START = -340.0   # entrada (izquierda)
-X_END   = +340.0   # salida (derecha)
+X_START = -340.0
+X_END   = +340.0
 V       = (X_START - X_END) / HISTORY_SECONDS
 
 W_HALF      = 3.0 * SIGMA
@@ -69,39 +69,40 @@ TINT_EMPTY = np.array([0.06, 0.07, 0.11])
 BG_COLOR = pg.mkColor(4, 10, 26, 255)
 
 # =====================================
-# CILINDROS (vúmetro circular, avance angular continuo tipo reloj)
+# CILINDROS
 # =====================================
-CYL_SEGMENTS   = 72          # resolución angular del arco
+CYL_SEGMENTS   = 72
 CYL_RADIUS     = 100.0
-CYL_HEIGHT     = 24.0        # cilindro bajo, tipo disco
-CYL_EMPTY_ALPHA = 0.35       # brillo del contorno vacío
-CYL_MAX_DELTA  = 225.0       # delta que da la vuelta completa (100 %)
-CYL_RISE       = 0.25        # suavizado al subir (0..1 por frame)
-CYL_FALL       = 0.10        # suavizado al bajar
-# Fracción de vuelta donde caen las marcas de WARNING y MAGNETIZED
+CYL_HEIGHT     = 24.0
+CYL_EMPTY_ALPHA = 0.35
+CYL_MAX_DELTA  = 225.0
+CYL_RISE       = 0.25
+CYL_FALL       = 0.10
 CYL_WARN_FRAC  = WARN_THRESHOLD  / CYL_MAX_DELTA
 CYL_ERR_FRAC   = ERROR_THRESHOLD / CYL_MAX_DELTA
-# verde hasta WARNING -> amarillo en WARNING -> rojo en MAGNETIZED
 CYL_STOPS      = [0.0, CYL_WARN_FRAC * 0.9, CYL_WARN_FRAC, CYL_ERR_FRAC]
-CYL_BASE_COLOR = np.array([0.30, 0.42, 0.70])   # mismo color de base para los 3 cilindros
+CYL_BASE_COLOR = np.array([0.30, 0.42, 0.70])
 
 # =====================================
-# VECTOR 3D (flecha + esferas de umbral + estela)
+# VECTOR 3D
 # =====================================
-VEC_TRAIL_SECONDS  = HISTORY_SECONDS            # la estela dura 2.5 s y desaparece
-VEC_TRAIL_MAX      = 600                        # tope de seguridad de muestras en memoria
-VEC_SMOOTH         = 0.35                       # suavizado de la flecha (0..1 por frame)
-VEC_MAX_LEN        = 1.5 * ERROR_THRESHOLD      # longitud visual máxima de la flecha (µT)
+VEC_TRAIL_SECONDS  = HISTORY_SECONDS
+VEC_TRAIL_MAX      = 600
+VEC_SMOOTH         = 0.35
+VEC_MAX_LEN        = 1.5 * ERROR_THRESHOLD
 VEC_ARROW_SEGMENTS = 24
-VEC_HEAD_LEN       = 28.0                       # largo de la punta (unidades = µT)
+VEC_HEAD_LEN       = 28.0
 VEC_SPHERE_ROWS    = 18
 VEC_SPHERE_COLS    = 36
 VEC_AXIS_LEN       = 1.25 * ERROR_THRESHOLD
-# verde hasta ~WARNING -> amarillo en WARNING -> rojo en MAGNETIZED (en µT de |B|)
 VEC_STOPS_MAG      = [0.0, WARN_THRESHOLD * 0.9, WARN_THRESHOLD, ERROR_THRESHOLD]
 VEC_AXIS_COLORS    = {'x': (0.35, 0.65, 1.00), 'y': (0.35, 0.90, 0.65), 'z': (0.85, 0.50, 1.00)}
 
-# =====================================
+# Flechas finas de Δ por eje
+DELTA_VEC_MAX_LEN  = ERROR_THRESHOLD         # longitud visual máxima de las flechas finas
+DELTA_VEC_SMOOTH   = 0.35                    # suavizado
+DELTA_VEC_WIDTH    = 2.5                     # grosor de la línea (fina)
+
 # =====================================
 # DIÁLOGO INICIAL
 # =====================================
@@ -269,7 +270,6 @@ def make_wave_view(title_text):
     vbox.addWidget(label)
     view = gl.GLViewWidget()
     view.setBackgroundColor(BG_COLOR)
-    # Alzado frontal (X crece hacia la derecha) con una ligera elevación
     view.setCameraPosition(pos=pg.Vector(0, 0, 15), distance=520, elevation=14, azimuth=-90)
     view.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
     vbox.addWidget(view, stretch=1)
@@ -314,7 +314,7 @@ for ax, v, t in [('x', wave_view_x, TINT_X), ('y', wave_view_y, TINT_Y), ('z', w
     wave_planes[ax] = {'item': item, 'verts': verts, 'events': [], 'tint': t, 'view': v}
 
 # =====================================
-# MODO QUESITOS (vunetro circular)
+# MODO CILINDROS
 # =====================================
 cheese_page = QWidget()
 cheese_layout = QVBoxLayout(cheese_page)
@@ -352,7 +352,6 @@ stack.addWidget(cheese_page)
 cheese_views = {'x': cheese_view_x, 'y': cheese_view_y, 'z': cheese_view_z}
 cheese_last_cam = {'x': None, 'y': None, 'z': None}
 
-# --- Contorno (cilindro vacío, tenue) ---
 def build_cyl_shell():
     S = CYL_SEGMENTS
     ang = np.linspace(0, 2*np.pi, S, endpoint=False)
@@ -370,9 +369,6 @@ def build_cyl_shell():
         faces.append([2*S + 1, S + i, S + i2])
     return verts, np.array(faces, dtype=np.uint32)
 
-# --- Relleno: cuña (porción de tarta) cuyo ángulo crece de forma continua.
-# Topología fija; solo cambian posiciones y colores.
-# Índices: tapa [0 = centro, 1..S+1 = arco] · lateral [S+2.. base, 2S+3.. techo] · 2 paredes radiales [3S+4..]
 def build_cyl_fill():
     S = CYL_SEGMENTS
     sb, st, W = S + 2, 2*S + 3, 3*S + 4
@@ -387,11 +383,9 @@ def build_cyl_fill():
     return verts, np.array(faces, dtype=np.uint32)
 
 def cyl_gradient(f):
-    """f (0..1 = fracción de altura total) -> RGB verde/amarillo/rojo."""
     cols = np.array([COLOR_OK, COLOR_OK, COLOR_WARNING, COLOR_MAGNETIZED])
     return np.stack([np.interp(f, CYL_STOPS, cols[:, c]) for c in range(3)], axis=-1)
 
-# --- Marcas de umbral: solo un mini triángulo (flecha) fuera del borde, apuntando al ángulo del umbral ---
 def add_threshold_marks(view):
     z = CYL_HEIGHT + 0.5
     R = CYL_RADIUS
@@ -399,10 +393,9 @@ def add_threshold_marks(view):
         a = frac * 2 * np.pi
         c, s = np.cos(a), np.sin(a)
         rgba = (col[0], col[1], col[2], 1.0)
-        # Flecha: triángulo con la punta hacia el borde del cilindro
         tip  = np.array([1.04 * R * c, 1.04 * R * s, z])
         base = 1.20 * R
-        hw   = 0.07 * R                              # semiancho de la base
+        hw   = 0.07 * R
         b1 = np.array([base * c - hw * s, base * s + hw * c, z])
         b2 = np.array([base * c + hw * s, base * s - hw * c, z])
         view.addItem(gl.GLMeshItem(vertexes=np.array([tip, b1, b2]),
@@ -412,7 +405,6 @@ def add_threshold_marks(view):
 
 cheese_discs = {}
 for ax, v, t in [('x', cheese_view_x, TINT_X), ('y', cheese_view_y, TINT_Y), ('z', cheese_view_z, TINT_Z)]:
-    # contorno
     sh_verts, sh_faces = build_cyl_shell()
     sh_colors = np.zeros((len(sh_verts), 4), dtype=float)
     sh_colors[:, 0] = CYL_BASE_COLOR[0]; sh_colors[:, 1] = CYL_BASE_COLOR[1]; sh_colors[:, 2] = CYL_BASE_COLOR[2]
@@ -421,14 +413,13 @@ for ax, v, t in [('x', cheese_view_x, TINT_X), ('y', cheese_view_y, TINT_Y), ('z
                           smooth=False, shader=None, glOptions='additive', drawEdges=False)
     v.addItem(shell)
 
-    # relleno
     verts, faces = build_cyl_fill()
     colors = np.ones((len(verts), 4), dtype=float)
     item = gl.GLMeshItem(vertexes=verts, faces=faces, vertexColors=colors,
                          smooth=False, shader=None, glOptions='translucent', drawEdges=False)
     item.setVisible(False)
     v.addItem(item)
-    add_threshold_marks(v)   # después del relleno para quedar por encima
+    add_threshold_marks(v)
 
     g = gl.GLGridItem()
     g.scale(30, 30, 1)
@@ -442,14 +433,12 @@ for ax, v, t in [('x', cheese_view_x, TINT_X), ('y', cheese_view_y, TINT_Y), ('z
         'base_verts': verts.copy(),
         'faces': faces,
         'tint': t,
-        'level': 0.0,     # nivel mostrado (animado)
-        'target': 0.0,    # nivel objetivo
+        'level': 0.0,
+        'target': 0.0,
     }
 
 # =====================================
 # MODO VECTOR 3D
-# Flecha desde el centro hacia (X, Y, Z) + esferas translúcidas en WARNING y MAGNETIZED + estela.
-# Las esferas se comparan con |B| (módulo del campo), no con el delta entre muestras.
 # =====================================
 vector_page = QWidget()
 vector_layout = QVBoxLayout(vector_page)
@@ -474,29 +463,33 @@ vector_view.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expan
 vector_layout.addWidget(vector_view, stretch=1)
 stack.addWidget(vector_page)
 
-# --- Estado ---
-vec_target = np.zeros(3)        # vector objetivo (último dato, recortado a VEC_MAX_LEN)
-vec_shown  = np.zeros(3)        # vector mostrado (suavizado)
-vec_mag    = 0.0                # |B| real del último dato
-vec_dom    = None               # índice del eje dominante (0,1,2)
+# --- Estado del vector ---
+vec_target = np.zeros(3)            # |B| objetivo (para la flecha grande y la estela)
+vec_shown  = np.zeros(3)            # |B| suavizado
+vec_mag    = 0.0                    # |B| real
+vec_dom    = None
 vec_dom_txt = "--"
 vec_has_data = False
-vec_trail  = deque(maxlen=VEC_TRAIL_MAX)   # filas [x, y, z, |B|, t]
+vec_trail  = deque(maxlen=VEC_TRAIL_MAX)
+
+# --- Delta por eje ---
+delta_target = np.zeros(3)          # Δ objetivo (X, Y, Z)
+delta_shown  = np.zeros(3)          # Δ suavizado
+delta_abs    = np.zeros(3)          # |Δ| por eje
+delta_max    = 0.0                  # max(|Δx|,|Δy|,|Δz|)
+delta_status = ("OK", "#3fdd66")
 
 def vec_gradient(mag):
-    """|B| en µT -> RGB verde/amarillo/rojo."""
     m = np.atleast_1d(np.asarray(mag, dtype=float))
     cols = np.array([COLOR_OK, COLOR_OK, COLOR_WARNING, COLOR_MAGNETIZED])
     return np.stack([np.interp(m, VEC_STOPS_MAG, cols[:, c]) for c in range(3)], axis=-1)
 
-# --- Rejilla suave bajo las esferas ---
 vec_grid = gl.GLGridItem()
 vec_grid.scale(25, 25, 1)
 vec_grid.translate(0, 0, -ERROR_THRESHOLD)
 vec_grid.setColor((40, 70, 140, 55))
 vector_view.addItem(vec_grid)
 
-# --- Ejes X / Y / Z (el dominante se resalta) ---
 vec_axes = {}
 for i, ax in enumerate(['x', 'y', 'z']):
     d = np.zeros(3); d[i] = VEC_AXIS_LEN
@@ -515,7 +508,6 @@ def highlight_axis(dom):
                              color=(col[0], col[1], col[2], 0.95 if on else 0.35),
                              width=3.0 if on else 1.5)
 
-# --- Etiquetas de texto (si esta versión de pyqtgraph tiene GLTextItem) ---
 if hasattr(gl, 'GLTextItem'):
     try:
         font = QFont('Consolas', 11, QFont.Weight.Bold)
@@ -533,14 +525,10 @@ if hasattr(gl, 'GLTextItem'):
     except Exception as e:
         print("Etiquetas 3D no disponibles:", e)
 
-# --- Estela (opaca, dibujada antes que las esferas translúcidas) ---
 vec_trail_item = gl.GLLinePlotItem(pos=np.zeros((2, 3)), color=(1, 1, 1, 0.0),
                                    width=2.5, antialias=True, mode='line_strip')
 vector_view.addItem(vec_trail_item)
 
-# --- Flecha: eje + punta cónica. Topología fija, solo cambian los vértices ---
-# Índices: eje abajo [0..S) · eje arriba [S..2S) · anillo plano (interior) [2S..3S)
-#          anillo plano (exterior) [3S..4S) · base del cono [4S..5S) · vértice [5S]
 VS = VEC_ARROW_SEGMENTS
 VEC_ANG = np.linspace(0, 2*np.pi, VS, endpoint=False)
 
@@ -548,9 +536,9 @@ def build_arrow_faces():
     faces = []
     for i in range(VS):
         j = (i + 1) % VS
-        faces.append([i, j, VS + i]);               faces.append([j, VS + j, VS + i])            # eje
-        faces.append([2*VS + i, 2*VS + j, 3*VS + j]); faces.append([2*VS + i, 3*VS + j, 3*VS + i])  # tapa de la punta
-        faces.append([4*VS + i, 4*VS + j, 5*VS])                                                 # cono
+        faces.append([i, j, VS + i]);               faces.append([j, VS + j, VS + i])
+        faces.append([2*VS + i, 2*VS + j, 3*VS + j]); faces.append([2*VS + i, 3*VS + j, 3*VS + i])
+        faces.append([4*VS + i, 4*VS + j, 5*VS])
     return np.array(faces, dtype=np.uint32)
 
 vec_arrow_faces = build_arrow_faces()
@@ -563,8 +551,18 @@ vector_view.addItem(vec_arrow)
 vec_hub = gl.GLScatterPlotItem(pos=np.zeros((1, 3)), size=10, color=(1, 1, 1, 0.9), pxMode=True)
 vector_view.addItem(vec_hub)
 
+# --- 3 flechas finas para Δx, Δy, Δz ---
+delta_arrows = {}
+for i, ax in enumerate(['x', 'y', 'z']):
+    col = VEC_AXIS_COLORS[ax]
+    line = gl.GLLinePlotItem(
+        pos=np.zeros((2, 3)), color=(col[0], col[1], col[2], 0.95),
+        width=DELTA_VEC_WIDTH, antialias=True, mode='lines'
+    )
+    vector_view.addItem(line)
+    delta_arrows[ax] = line
+
 def arrow_vertices(vec):
-    """Vértices de la flecha desde el origen hasta vec (None si es demasiado corta)."""
     L = float(np.linalg.norm(vec))
     if L < 1.0:
         return None
@@ -576,7 +574,7 @@ def arrow_vertices(vec):
     ref = np.array([0.0, 0.0, 1.0]) if abs(d[2]) < 0.95 else np.array([1.0, 0.0, 0.0])
     u = np.cross(d, ref); u /= np.linalg.norm(u)
     v = np.cross(d, u)
-    ring = np.cos(VEC_ANG)[:, None] * u + np.sin(VEC_ANG)[:, None] * v   # (S, 3)
+    ring = np.cos(VEC_ANG)[:, None] * u + np.sin(VEC_ANG)[:, None] * v
     verts = np.empty((5*VS + 1, 3), dtype=float)
     verts[0:VS]        = ring * shaft_r
     verts[VS:2*VS]     = ring * shaft_r + d * Ls
@@ -586,7 +584,7 @@ def arrow_vertices(vec):
     verts[5*VS]        = d * L
     return verts
 
-# --- Esferas de umbral (translúcidas, después de la flecha para no tapar su profundidad) ---
+# --- Esferas de umbral (1 anillo horizontal cada una) ---
 def make_threshold_sphere(radius, rgb, depth):
     md = gl.MeshData.sphere(rows=VEC_SPHERE_ROWS, cols=VEC_SPHERE_COLS, radius=radius)
     item = gl.GLMeshItem(meshdata=md, smooth=True, shader='shaded',
@@ -594,19 +592,20 @@ def make_threshold_sphere(radius, rgb, depth):
                          glOptions='translucent', drawEdges=False)
     item.setDepthValue(depth)
     vector_view.addItem(item)
-    # tres círculos máximos para que la esfera se lea bien aunque sea muy transparente
+
     t = np.linspace(0, 2*np.pi, 96)
-    c, s, z = radius*np.cos(t), radius*np.sin(t), np.zeros_like(t)
-    for pts in (np.column_stack([c, s, z]), np.column_stack([c, z, s]), np.column_stack([z, c, s])):
-        vector_view.addItem(gl.GLLinePlotItem(pos=pts, color=(rgb[0], rgb[1], rgb[2], 0.45),
-                                              width=1.2, antialias=True, mode='line_strip'))
+    ring = np.column_stack([radius*np.cos(t), radius*np.sin(t), np.zeros_like(t)])
+    vector_view.addItem(gl.GLLinePlotItem(
+        pos=ring,
+        color=(rgb[0], rgb[1], rgb[2], 0.65),
+        width=1.6, antialias=True, mode='line_strip'
+    ))
     return item
 
 vec_sphere_err  = make_threshold_sphere(ERROR_THRESHOLD, COLOR_MAGNETIZED, 11)
 vec_sphere_warn = make_threshold_sphere(WARN_THRESHOLD,  COLOR_WARNING,    10)
 
 def refresh_trail(now):
-    """Descarta las muestras de más de VEC_TRAIL_SECONDS y atenúa el resto según su edad."""
     while vec_trail and now - vec_trail[0][4] > VEC_TRAIL_SECONDS:
         vec_trail.popleft()
     if len(vec_trail) < 2:
@@ -618,9 +617,11 @@ def refresh_trail(now):
     vec_trail_item.setVisible(True)
     vec_trail_item.setData(pos=arr[:, :3], color=colors)
 
-def on_vector_sample(x, y, z):
-    """Llamar con cada muestra nueva (en cualquier modo, para que la estela siga grabando)."""
+def on_vector_sample(x, y, z, dx, dy, dz):
+    """Llamar con cada muestra. dx/dy/dz = variación respecto a la anterior."""
     global vec_mag, vec_dom, vec_dom_txt, vec_has_data
+    global delta_target, delta_abs, delta_max, delta_status
+
     v = np.array([x, y, z], dtype=float)
     vec_mag = float(np.linalg.norm(v))
     vec_has_data = True
@@ -634,25 +635,39 @@ def on_vector_sample(x, y, z):
         highlight_axis(dom)
     axname = ['x', 'y', 'z'][dom]
     vec_dom_txt = f"{'+' if v[dom] >= 0 else '−'}{axname.upper()}"
+
+    # --- Δ por eje ---
+    delta_abs[:] = [abs(dx), abs(dy), abs(dz)]
+    delta_max = float(np.max(delta_abs))
+    delta_status = status_info(delta_max)
+    delta_target[:] = [dx, dy, dz]
+    # escalar si excede el máximo visual
+    mag_d = np.linalg.norm(delta_target)
+    if mag_d > DELTA_VEC_MAX_LEN and mag_d > 1e-9:
+        delta_target *= DELTA_VEC_MAX_LEN / mag_d
+
     ac = VEC_AXIS_COLORS[axname]
     ac_hex = '#%02x%02x%02x' % (int(ac[0]*255), int(ac[1]*255), int(ac[2]*255))
-    status, sc = status_info(vec_mag)
+    status, sc = status_info(delta_max)
     vec_title.setText(
         f"VECTOR 3D · |B| = {vec_mag:6.1f} µT · eje dominante "
         f"<span style='color:{ac_hex};'><b>{vec_dom_txt}</b></span> · "
+        f"Δmax = {delta_max:5.1f} µT "
         f"<span style='color:{sc};'><b>{status}</b></span>"
     )
 
 def update_vector(now):
     if not vec_has_data:
         return
-    refresh_trail(now)          # cada frame: la estela se desvanece aunque no lleguen datos
+    refresh_trail(now)
     vec_shown[:] += (vec_target - vec_shown) * VEC_SMOOTH
+    delta_shown[:] += (delta_target - delta_shown) * DELTA_VEC_SMOOTH
+
     pulse = 0.72 + 0.28 * np.sin(now * MAG_PULSE_FREQ)
 
-    # color de la flecha según |B|; en MAGNETIZED pulsa
-    rgb = vec_gradient(vec_mag)[0]
-    if vec_mag > ERROR_THRESHOLD:
+    # Color de la flecha grande = según Δmax (decisión de color)
+    rgb = vec_gradient(delta_max)[0]
+    if delta_max > ERROR_THRESHOLD:
         rgb = rgb * pulse
     rgb = np.clip(rgb, 0.0, 1.0)
 
@@ -664,11 +679,11 @@ def update_vector(now):
         vec_arrow.setMeshData(vertexes=verts, faces=vec_arrow_faces,
                               color=(rgb[0], rgb[1], rgb[2], 1.0))
 
-    # la zona iluminada indica el estado: verde (OK) / amarilla (WARNING) / roja pulsante (MAGNETIZED)
-    if vec_mag > ERROR_THRESHOLD:
+    # Esferas: iluminación según Δmax
+    if delta_max > ERROR_THRESHOLD:
         inner_col, inner_a = COLOR_WARNING, 0.07
         outer_a = 0.10 + 0.12 * pulse
-    elif vec_mag > WARN_THRESHOLD:
+    elif delta_max > WARN_THRESHOLD:
         inner_col, inner_a = COLOR_WARNING, 0.16
         outer_a = 0.04
     else:
@@ -676,6 +691,19 @@ def update_vector(now):
         outer_a = 0.04
     vec_sphere_warn.setColor((inner_col[0], inner_col[1], inner_col[2], inner_a))
     vec_sphere_err.setColor((COLOR_MAGNETIZED[0], COLOR_MAGNETIZED[1], COLOR_MAGNETIZED[2], outer_a))
+
+    # 3 flechas finas: cada una va del origen al Δ suavizado de su eje
+    for i, ax in enumerate(['x', 'y', 'z']):
+        tip = np.zeros(3); tip[i] = delta_shown[i]
+        line = delta_arrows[ax]
+        col = VEC_AXIS_COLORS[ax]
+        # Si el Δ es negativo en ese eje, la flecha va hacia el lado opuesto → color más apagado
+        alpha = 0.95 if delta_shown[i] >= 0 else 0.55
+        line.setData(
+            pos=np.array([[0, 0, 0], tip], dtype=float),
+            color=(col[0], col[1], col[2], alpha),
+            width=DELTA_VEC_WIDTH
+        )
 
 # =====================================
 # ESTADO COMÚN
@@ -703,11 +731,9 @@ def tukey_window(u, alpha=TUKEY_ALPHA):
     return np.where(absu <= 1 - alpha, 1.0, np.where(absu < 1, smooth, 0.0))
 
 def add_cheese_event(axis, delta):
-    """Fija el nivel objetivo = delta / CYL_MAX_DELTA (saturado a 1.0). El cilindro sube suavemente hasta él."""
     cheese_discs[axis]['target'] = float(np.clip(delta / CYL_MAX_DELTA, 0.0, 1.0))
 
 def _cyl_color(f, pulse):
-    """Color por fracción de vuelta f (0..1); la zona roja pulsa."""
     f = np.atleast_1d(np.asarray(f, dtype=float))
     rgb = cyl_gradient(f)
     fac = 1.0 - (1.0 - pulse) * np.clip((f - CYL_ERR_FRAC) / 0.10, 0.0, 1.0)
@@ -720,7 +746,6 @@ def update_cheese(now):
     idx = np.arange(S + 1)
     pulse = 0.72 + 0.28 * np.sin(now * MAG_PULSE_FREQ)
     for axis, disc in cheese_discs.items():
-        # avance progresivo hacia el objetivo
         k = CYL_RISE if disc['target'] > disc['level'] else CYL_FALL
         disc['level'] += (disc['target'] - disc['level']) * k
         if abs(disc['target'] - disc['level']) < 1e-3:
@@ -732,8 +757,8 @@ def update_cheese(now):
             continue
         disc['item'].setVisible(True)
 
-        ang = level * 2*np.pi * idx / S          # ángulo de cada vértice del arco
-        f   = level * idx / S                    # fracción de vuelta -> color
+        ang = level * 2*np.pi * idx / S
+        f   = level * idx / S
         cx, cy = Rad * np.cos(ang), Rad * np.sin(ang)
 
         verts = np.zeros((3*S + 12, 3), dtype=float)
@@ -744,11 +769,11 @@ def update_cheese(now):
         verts[W:W+4]   = [[0, 0, 0], [0, 0, H], [Rad, 0, 0], [Rad, 0, H]]
         verts[W+4:W+8] = [[0, 0, 0], [0, 0, H], [cx[-1], cy[-1], 0], [cx[-1], cy[-1], H]]
 
-        rgb = _cyl_color(f, pulse)               # (S+1, 3)
-        side = 0.80 + 0.20 * np.cos(ang - 0.6)   # sombreado suave del lateral
+        rgb = _cyl_color(f, pulse)
+        side = 0.80 + 0.20 * np.cos(ang - 0.6)
         colors = np.ones((3*S + 12, 4), dtype=float)
         colors[0, :3] = _cyl_color(level * 0.5, pulse)[0]
-        colors[1:S+2, :3] = rgb                  # tapa a color pleno
+        colors[1:S+2, :3] = rgb
         colors[sb:sb+S+1, :3] = rgb * side[:, None]
         colors[st:st+S+1, :3] = rgb * side[:, None]
         colors[W:W+4, :3]   = _cyl_color(0.0, pulse)[0] * 0.65
@@ -828,11 +853,12 @@ def update():
             if m:
                 x = float(m.group(1)); y = float(m.group(2)); z = float(m.group(3))
                 cur = np.array([x, y, z])
-                on_vector_sample(x, y, z)
                 if prev is not None:
                     dv = cur - prev
                     d_abs = np.abs(dv)
-                    delta_max = float(np.max(d_abs))
+                    delta_max_val = float(np.max(d_abs))
+
+                    on_vector_sample(x, y, z, dv[0], dv[1], dv[2])
 
                     for idx, axis in enumerate(['x', 'y', 'z']):
                         d_axis = float(d_abs[idx])
@@ -843,25 +869,49 @@ def update():
                             })
                             add_cheese_event(axis, d_axis)
 
-                    status, sc = status_info(delta_max)
-                    counts = "  ".join(
-                        f"<span style='color:#3fdd66;'>{a.upper()}:{len(wave_planes[a]['events'])}</span>"
-                        for a in ['x', 'y', 'z']
-                    )
-                    cheese_counts = "  ".join(
-                        f"{a.upper()}:{int(round(cheese_discs[a]['target'] * 100))}%"
-                        for a in ['x', 'y', 'z']
-                    )
-                    hud.setText(
-                        f"X: {x:7.2f}   Y: {y:7.2f}   Z: {z:7.2f} µT   │   "
-                        f"Δx={d_abs[0]:5.1f}  Δy={d_abs[1]:5.1f}  Δz={d_abs[2]:5.1f}   │   "
-                        f"<span style='color:{sc};'><b>{status}</b></span><br>"
-                        f"olas: {counts}   │   cilindros: {cheese_counts}   │   "
-                        f"vector: |B|={vec_mag:.1f} µT, dominante {vec_dom_txt}<br>"
-                        f"<span style='color:#3fdd66;'>■</span> OK  "
-                        f"<span style='color:#ffe012;'>■</span> WARNING  "
-                        f"<span style='color:#ff4040;'>■</span> MAGNETIZED"
-                    )
+                    status, sc = status_info(delta_max_val)
+
+                    # --- HUD DINÁMICO SEGÚN MODO ---
+                    if current_mode == "waves":
+                        counts = "  ".join(
+                            f"<span style='color:#3fdd66;'>{a.upper()}:{len(wave_planes[a]['events'])}</span>"
+                            for a in ['x', 'y', 'z']
+                        )
+                        hud.setText(
+                            f"X: {x:7.2f}   Y: {y:7.2f}   Z: {z:7.2f} µT   │   "
+                            f"Δx={d_abs[0]:5.1f}  Δy={d_abs[1]:5.1f}  Δz={d_abs[2]:5.1f}   │   "
+                            f"<span style='color:{sc};'><b>{status}</b></span><br>"
+                            f"olas: {counts}   │   "
+                            f"<span style='color:#3fdd66;'>■</span> OK  "
+                            f"<span style='color:#ffe012;'>■</span> WARNING  "
+                            f"<span style='color:#ff4040;'>■</span> MAGNETIZED"
+                        )
+                    elif current_mode == "cheese":
+                        cheese_counts = "  ".join(
+                            f"{a.upper()}:{int(round(cheese_discs[a]['target'] * 100))}%"
+                            for a in ['x', 'y', 'z']
+                        )
+                        hud.setText(
+                            f"X: {x:7.2f}   Y: {y:7.2f}   Z: {z:7.2f} µT   │   "
+                            f"Δx={d_abs[0]:5.1f}  Δy={d_abs[1]:5.1f}  Δz={d_abs[2]:5.1f}   │   "
+                            f"<span style='color:{sc};'><b>{status}</b></span><br>"
+                            f"cilindros: {cheese_counts}   │   "
+                            f"<span style='color:#3fdd66;'>■</span> OK  "
+                            f"<span style='color:#ffe012;'>■</span> WARNING  "
+                            f"<span style='color:#ff4040;'>■</span> MAGNETIZED"
+                        )
+                    else:  # vector
+                        hud.setText(
+                            f"X: {x:7.2f}   Y: {y:7.2f}   Z: {z:7.2f} µT   │   "
+                            f"|B| = {vec_mag:6.2f} µT   │   "
+                            f"Δmax = {delta_max_val:5.2f} µT   │   "
+                            f"<span style='color:{sc};'><b>{status}</b></span><br>"
+                            f"eje dominante: <b>{vec_dom_txt}</b>   │   "
+                            f"Δx={d_abs[0]:5.1f}  Δy={d_abs[1]:5.1f}  Δz={d_abs[2]:5.1f}<br>"
+                            f"<span style='color:#3fdd66;'>■</span> OK  "
+                            f"<span style='color:#ffe012;'>■</span> WARNING  "
+                            f"<span style='color:#ff4040;'>■</span> MAGNETIZED"
+                        )
                     hud.adjustSize()
                 prev = cur
 
