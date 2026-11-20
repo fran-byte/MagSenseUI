@@ -256,9 +256,9 @@ def make_view(title_text):
 
     return container, view
 
-container_x, view_x = make_view("PLANO X  (frente)")
-container_y, view_y = make_view("PLANO Y  (medio)")
-container_z, view_z = make_view("PLANO Z  (fondo)")
+container_x, view_x = make_view("EJE X")
+container_y, view_y = make_view("EJE Y")
+container_z, view_z = make_view("EJE Z")
 
 views_layout.addWidget(container_x, stretch=1)
 views_layout.addWidget(container_y, stretch=1)
