@@ -11,7 +11,8 @@ class MenuManager
 private:
     // Identificadores de opcion (no son posiciones en pantalla):
     // 0-7 ganancia, 8 serie, 9-10 vista, 11-14 valores numericos,
-    // 15 entrada "Gain" del menu principal, 16 "< Back" del submenu de ganancia
+    // 15 entrada "Gain" del menu principal, 16 "< Back" del submenu de ganancia,
+    // 17 "Serial OFF"
     enum
     {
         OPT_SERIAL = 8,
@@ -22,7 +23,8 @@ private:
         OPT_ERROR = 13, // umbral MAGNETIZED / error (uT)
         OPT_INTERVAL = 14, // intervalo entre tomas (ms)
         OPT_GAIN_MENU = 15,
-        OPT_BACK = 16
+        OPT_BACK = 16,
+        OPT_SERIAL_OFF = 17
     };
 
     // Niveles del menu
@@ -32,7 +34,7 @@ private:
         LEVEL_GAIN = 1  // 8 ganancias + Back
     };
 
-    static const int MAIN_SIZE = 8; // posiciones del menu principal
+    static const int MAIN_SIZE = 9; // posiciones del menu principal
     static const int GAIN_SIZE = 9; // 8 ganancias + Back
 
     // Etiquetas por identificador de opcion (tambien las usa showSummary)
@@ -78,7 +80,12 @@ public:
     static void returnToMenu();
     static bool waitForSetup(int seconds = 4);
     static bool isInMenuMode() { return inMenuMode; }
-    static int getCurrentOption() { return activeOption(); }
+    // Estado real que consume el resto del programa: modo serie o ganancia vigente
+    static int getCurrentOption()
+    {
+        return SensorManager::isSerialModeActive() ? (int)OPT_SERIAL
+                                                   : SensorManager::getCurrentGainIndex();
+    }
     static const char *const *getGainLabels() { return gainLabels; }
 };
 
@@ -144,7 +151,7 @@ int MenuManager::optionAt(int pos)
     if (level == LEVEL_MAIN)
     {
         static const int mainOptions[MAIN_SIZE] = {
-            OPT_GAIN_MENU, OPT_SERIAL, OPT_VIEW_MODERN, OPT_VIEW_CLASSIC,
+            OPT_GAIN_MENU, OPT_SERIAL, OPT_SERIAL_OFF, OPT_VIEW_MODERN, OPT_VIEW_CLASSIC,
             OPT_RANGE, OPT_WARN, OPT_ERROR, OPT_INTERVAL};
         return mainOptions[pos];
     }
@@ -246,6 +253,8 @@ void MenuManager::refreshLabels()
             menuLabels[pos] = gainEntryLabel;
         else if (id == OPT_BACK)
             menuLabels[pos] = "< Back";
+        else if (id == OPT_SERIAL_OFF)
+            menuLabels[pos] = "Serial OFF";
         else
             menuLabels[pos] = gainLabels[id];
     }
@@ -358,6 +367,19 @@ void MenuManager::handleMenuNavigation()
                 menuScrollOffset = 0;
                 buttonPressed = true;
                 menuStartTime = currentTime;
+            }
+            else if (id == OPT_SERIAL_OFF)
+            {
+                // Desactiva el modo serie y vuelve a la pantalla de medicion;
+                // no toca la ganancia guardada
+                SensorManager::setSerialMode(false);
+
+                isConfigured = true;
+                inMenuMode = false;
+
+                static const char *serialOffLabel[1] = {"Serial: OFF"};
+                DisplayUtils::showSummary(false, 0, serialOffLabel);
+                return;
             }
             else if (id >= OPT_RANGE)
             {
