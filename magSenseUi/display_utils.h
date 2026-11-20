@@ -21,7 +21,8 @@ public:
     enum ViewMode
     {
         VIEW_MODERN = 0, // historico de Δ + diagnostico Δ
-        VIEW_CLASSIC = 1 // original: barras VU por eje + ganancia
+        VIEW_CLASSIC = 1, // original: barras VU por eje + ganancia
+        VIEW_3D = 2       // cilindros 3D (tipo reloj) por eje
     };
 
 private:
@@ -48,6 +49,7 @@ private:
     static int histHead;  // proxima posicion a escribir
     static int histCount; // muestras validas
     static float lastX, lastY, lastZ;
+    static float level3d[3]; // nivel mostrado (animado) de cada cilindro, 0..1
     static bool firstSample;
 
     static unsigned long toastUntil;   // aviso "TARE" visible hasta este instante
@@ -62,6 +64,12 @@ private:
                                       float prevX, float prevY, float prevZ,
                                       bool readSuccess, int currentOption,
                                       const char *const labels[]);
+    static void showSensorData3D(float magX, float magY, float magZ,
+                                 float prevX, float prevY, float prevZ,
+                                 bool readSuccess, int currentOption,
+                                 const char *const labels[]);
+    static void drawCylinder3D(int cx, int cy, int rx, int ry, int h,
+                               float level, float warnFrac);
 
 public:
     static void begin();
@@ -97,6 +105,7 @@ float DisplayUtils::lastX = 0;
 float DisplayUtils::lastY = 0;
 float DisplayUtils::lastZ = 0;
 bool DisplayUtils::firstSample = true;
+float DisplayUtils::level3d[3] = {0, 0, 0};
 unsigned long DisplayUtils::toastUntil = 0;
 unsigned long DisplayUtils::lastDrawTime = 0;
 
@@ -112,7 +121,9 @@ void DisplayUtils::begin()
 
 void DisplayUtils::setViewMode(int mode)
 {
-    viewMode = (mode == VIEW_CLASSIC) ? VIEW_CLASSIC : VIEW_MODERN;
+    viewMode = (mode == VIEW_CLASSIC) ? VIEW_CLASSIC
+             : (mode == VIEW_3D)      ? VIEW_3D
+                                      : VIEW_MODERN;
 }
 
 // Los umbrales tambien se pasan al detector (reinicia sus estados)
@@ -131,6 +142,7 @@ void DisplayUtils::clearHistory()
     histHead = 0;
     histCount = 0;
     firstSample = true;
+    level3d[0] = level3d[1] = level3d[2] = 0;
 }
 
 void DisplayUtils::resetMeasurement()
@@ -352,6 +364,9 @@ void DisplayUtils::showSensorData(float magX, float magY, float magZ,
     if (viewMode == VIEW_CLASSIC)
         showSensorDataClassic(magX, magY, magZ, prevX, prevY, prevZ,
                               readSuccess, currentOption, labels);
+    else if (viewMode == VIEW_3D)
+        showSensorData3D(magX, magY, magZ, prevX, prevY, prevZ,
+                         readSuccess, currentOption, labels);
     else
         showSensorDataModern(magX, magY, magZ, prevX, prevY, prevZ,
                              readSuccess, currentOption, labels);
@@ -628,6 +643,181 @@ void DisplayUtils::showSensorDataClassic(float magX, float magY, float magZ,
 
         drawToast();
     } while (display.nextPage());
+}
+
+// ---------------------------------------------------------------------------
+// VISTA 3D
+//
+// Tres cilindros (X, Y, Z) en perspectiva. Cada uno se llena como un reloj:
+// la cuna avanza de forma continua desde las 12 en sentido horario y la vuelta
+// completa equivale a errorThreshold (= MAGNETIZED). Una marca en el borde
+// senala el umbral WARNING. La cuna se rellena en la tapa y, en franjas, en la
+// pared frontal para dar volumen.
+//
+// Layout (128x64):
+// y 0-10  X / Y / Z (campo) en 3 columnas, en negativo si su Δ > error
+// y 22-50 los tres cilindros (centros x = 21, 64, 107)
+// y 55-63 barra inferior igual que la vista moderna
+//
+// Nivel = Δ con peak hold del Detector / errorThreshold, con suavizado.
+// IMPORTANTE: todas las coordenadas deben ser >= 0 (U8g2 usa 8 bits sin signo).
+// ---------------------------------------------------------------------------
+void DisplayUtils::drawCylinder3D(int cx, int cy, int rx, int ry, int h,
+                                  float level, float warnFrac)
+{
+    // Contorno: tapa, dos laterales y arco inferior frontal
+    display.drawEllipse(cx, cy, rx, ry);
+    display.drawVLine(cx - rx, cy, h + 1);
+    display.drawVLine(cx + rx, cy, h + 1);
+    display.drawEllipse(cx, cy + h, rx, ry, U8G2_DRAW_LOWER_LEFT | U8G2_DRAW_LOWER_RIGHT);
+
+    // Marca del umbral WARNING en el borde de la tapa
+    float wa = warnFrac * TWO_PI;
+    int wx0 = cx + (int)lroundf(rx * sinf(wa));
+    int wy0 = cy - (int)lroundf(ry * cosf(wa));
+    int wx1 = cx + (int)lroundf((rx + 2) * sinf(wa));
+    int wy1 = cy - (int)lroundf((ry + 2) * cosf(wa));
+    display.drawLine(wx0, wy0, wx1, wy1);
+
+    if (level < 0.004f)
+        return;
+    if (level > 1.0f)
+        level = 1.0f;
+    float lim = level * TWO_PI; // angulo barrido, 0 = las 12, horario
+
+    // Tapa: cada pixel de la elipse se "des-aplasta" a un circulo y se
+    // compara su angulo con el barrido
+    for (int dy = -ry; dy <= ry; dy++)
+    {
+        float v = -(float)dy / ry; // arriba = positivo
+        for (int dx = -rx; dx <= rx; dx++)
+        {
+            float u = (float)dx / rx;
+            if (u * u + v * v > 1.0f)
+                continue;
+            float th = atan2f(u, v);
+            if (th < 0)
+                th += TWO_PI;
+            if (th <= lim)
+                display.drawPixel(cx + dx, cy + dy);
+        }
+    }
+
+    // Pared frontal (de las 9 a las 3 pasando por las 6): columnas alternas
+    // para dar sensacion de sombreado
+    for (int dx = -rx + 1; dx < rx; dx++)
+    {
+        if (dx & 1)
+            continue;
+        float u = (float)dx / rx;
+        float s = sqrtf(1.0f - u * u) * ry;
+        float th = atan2f(u, -sqrtf(1.0f - u * u));
+        if (th < 0)
+            th += TWO_PI;
+        if (th > lim)
+            continue;
+        int y0 = cy + (int)(s + 0.5f) + 2;
+        int y1 = cy + h + (int)(s + 0.5f) - 1;
+        if (y1 >= y0)
+            display.drawVLine(cx + dx, y0, y1 - y0 + 1);
+    }
+
+    // "Aguja" del reloj: linea en negativo sobre la zona rellena
+    if (level < 0.996f)
+    {
+        display.setDrawColor(0);
+        display.drawLine(cx, cy,
+                         cx + (int)lroundf(rx * 0.9f * sinf(lim)),
+                         cy - (int)lroundf(ry * 0.9f * cosf(lim)));
+        display.setDrawColor(1);
+    }
+}
+
+void DisplayUtils::showSensorData3D(float magX, float magY, float magZ,
+                                    float prevX, float prevY, float prevZ,
+                                    bool readSuccess, int currentOption,
+                                    const char *const labels[])
+{
+    Detector::State state = Detector::getState();
+    bool isWarning = (state != Detector::STATE_OK);
+    bool isMagnetized = (state == Detector::STATE_MAGNETIZED);
+
+    display.clearBuffer();
+    display.setDrawColor(1);
+
+    if (!readSuccess)
+    {
+        display.setFont(u8g2_font_6x10_tf);
+        display.drawStr(34, 36, "Read error");
+        display.sendBuffer();
+        return;
+    }
+
+    char buf[24];
+    const float mags[3] = {magX, magY, magZ};
+    const char names[3] = {'X', 'Y', 'Z'};
+    const int CX[3] = {21, 64, 107};
+
+    float scale = (errorThreshold > 0.0f) ? errorThreshold : 1.0f;
+    float warnFrac = warnThreshold / scale;
+    if (warnFrac > 1.0f)
+        warnFrac = 1.0f;
+
+    display.setFont(u8g2_font_6x10_tf);
+    for (int a = 0; a < 3; a++)
+    {
+        // Cabecera: campo del eje; en negativo si su Δ supera MAGNETIZED
+        snprintf(buf, sizeof(buf), "%c%+5.0f", names[a], mags[a]);
+        int tx = CX[a] - 18;
+        if (Detector::axisMagnetized(a))
+        {
+            display.drawBox(tx - 1, 0, 38, 11);
+            display.setDrawColor(0);
+        }
+        display.drawStr(tx, 9, buf);
+        display.setDrawColor(1);
+
+        // Nivel objetivo y avance progresivo (sube rapido, baja mas despacio)
+        float target = Detector::getDelta(a) / scale;
+        if (target > 1.0f)
+            target = 1.0f;
+        float &lv = level3d[a];
+        lv += (target - lv) * (target > lv ? 0.35f : 0.15f);
+        if (fabsf(target - lv) < 0.004f)
+            lv = target;
+
+        drawCylinder3D(CX[a], 31, 18, 9, 10, lv, warnFrac);
+    }
+
+    // ---- Barra inferior: igual que la vista moderna ----
+    char maxAxis = Detector::getMaxAxis();
+    float maxDelta = Detector::getMaxDelta();
+    bool invert = isMagnetized && (((millis() / 500) % 2) == 0);
+    if (invert)
+    {
+        display.drawBox(0, 55, 128, 9);
+        display.setDrawColor(0);
+    }
+
+    display.drawLine(5, 57, 2, 63);
+    display.drawLine(5, 57, 8, 63);
+    display.drawLine(2, 63, 8, 63);
+
+    snprintf(buf, sizeof(buf), "%c:%.0f", maxAxis, maxDelta);
+    display.drawStr(12, 63, buf);
+
+    const char *stateText = isMagnetized ? "MAGNETIZED" : (isWarning ? "WARNING" : "OK");
+    int sx = 126 - display.getStrWidth(stateText);
+    display.drawStr(sx, 63, stateText);
+
+    if (isMagnetized)
+        AlertSymbols::drawRadiation(display, sx - 13, 56);
+    else if (isWarning)
+        AlertSymbols::drawWarning(display, sx - 12, 56);
+
+    display.setDrawColor(1);
+    drawToast();
+    display.sendBuffer();
 }
 
 #endif

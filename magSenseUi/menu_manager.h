@@ -12,7 +12,7 @@ private:
     // Identificadores de opcion (no son posiciones en pantalla):
     // 0-7 ganancia, 8 serie, 9-10 vista, 11-14 valores numericos,
     // 15 entrada "Gain" del menu principal, 16 "< Back" del submenu de ganancia,
-    // 17 "Serial OFF"
+    // 17 "Serial OFF", 18 vista 3D
     enum
     {
         OPT_SERIAL = 8,
@@ -24,7 +24,8 @@ private:
         OPT_INTERVAL = 14, // intervalo entre tomas (ms)
         OPT_GAIN_MENU = 15,
         OPT_BACK = 16,
-        OPT_SERIAL_OFF = 17
+        OPT_SERIAL_OFF = 17,
+        OPT_VIEW_3D = 18
     };
 
     // Niveles del menu
@@ -34,7 +35,7 @@ private:
         LEVEL_GAIN = 1  // 8 ganancias + Back
     };
 
-    static const int MAIN_SIZE = 9; // posiciones del menu principal
+    static const int MAIN_SIZE = 10; // posiciones del menu principal
     static const int GAIN_SIZE = 9; // 8 ganancias + Back
 
     // Etiquetas por identificador de opcion (tambien las usa showSummary)
@@ -45,7 +46,7 @@ private:
     static const int visibleMenuOptions;
 
     // Etiquetas de la pantalla actual, por posicion
-    static const char *menuLabels[9];
+    static const char *menuLabels[10];
 
     // Estado de navegacion
     static int level;
@@ -118,7 +119,7 @@ const mlx90393_gain MenuManager::gainValues[8] = {
 
 const int MenuManager::visibleMenuOptions = 5;
 const unsigned long MenuManager::MENU_TIMEOUT = 5000;
-const char *MenuManager::menuLabels[9] = {};
+const char *MenuManager::menuLabels[10] = {};
 
 // Static variable initialization
 int MenuManager::level = MenuManager::LEVEL_MAIN;
@@ -152,7 +153,7 @@ int MenuManager::optionAt(int pos)
     {
         static const int mainOptions[MAIN_SIZE] = {
             OPT_GAIN_MENU, OPT_SERIAL, OPT_SERIAL_OFF, OPT_VIEW_MODERN, OPT_VIEW_CLASSIC,
-            OPT_RANGE, OPT_WARN, OPT_ERROR, OPT_INTERVAL};
+            OPT_VIEW_3D, OPT_RANGE, OPT_WARN, OPT_ERROR, OPT_INTERVAL};
         return mainOptions[pos];
     }
     return (pos < 8) ? pos : (int)OPT_BACK;
@@ -255,6 +256,8 @@ void MenuManager::refreshLabels()
             menuLabels[pos] = "< Back";
         else if (id == OPT_SERIAL_OFF)
             menuLabels[pos] = "Serial OFF";
+        else if (id == OPT_VIEW_3D)
+            menuLabels[pos] = "View: 3D";
         else
             menuLabels[pos] = gainLabels[id];
     }
@@ -381,19 +384,12 @@ void MenuManager::handleMenuNavigation()
                 DisplayUtils::showSummary(false, 0, serialOffLabel);
                 return;
             }
-            else if (id >= OPT_RANGE)
-            {
-                // Entra en edicion del valor; no sale del menu
-                editing = true;
-                editValue = currentValueOf(id);
-                buttonPressed = true;
-                menuStartTime = currentTime;
-            }
-            else if (id >= OPT_VIEW_MODERN)
+            else if ((id >= OPT_VIEW_MODERN && id <= OPT_VIEW_CLASSIC) || id == OPT_VIEW_3D)
             {
                 // Cambio de vista: no toca ganancia ni modo serie
                 int newView = (id == OPT_VIEW_CLASSIC) ? DisplayUtils::VIEW_CLASSIC
-                                                      : DisplayUtils::VIEW_MODERN;
+                            : (id == OPT_VIEW_3D)      ? DisplayUtils::VIEW_3D
+                                                       : DisplayUtils::VIEW_MODERN;
                 DisplayUtils::setViewMode(newView);
                 SensorManager::setViewMode(newView);
                 SensorManager::saveViewToEEPROM();
@@ -402,8 +398,17 @@ void MenuManager::handleMenuNavigation()
                 inMenuMode = false;
 
                 // Resumen con la etiqueta de la vista elegida
-                DisplayUtils::showSummary(false, id, gainLabels);
+                const char *viewName[1] = {(id == OPT_VIEW_3D) ? "View: 3D" : gainLabels[id]};
+                DisplayUtils::showSummary(false, 0, viewName);
                 return;
+            }
+            else if (id >= OPT_RANGE && id <= OPT_INTERVAL)
+            {
+                // Entra en edicion del valor; no sale del menu
+                editing = true;
+                editValue = currentValueOf(id);
+                buttonPressed = true;
+                menuStartTime = currentTime;
             }
             else
             {

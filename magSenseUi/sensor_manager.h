@@ -45,7 +45,7 @@ private:
     // Configuration
     static int currentGainIndex;
     static bool serialModeActive;
-    static int viewMode; // 0 = moderna, 1 = clasica (EEPROM direccion 1)
+    static int viewMode; // 0 = moderna, 1 = clasica, 2 = 3D (EEPROM direccion 1)
 
     // Rangos (EEPROM: 2 = rango grafica, 4 = warning, 6 = error; uint16_t)
     static uint16_t graphRange;
@@ -69,7 +69,7 @@ public:
     static bool getReadSuccess() { return readSuccess; }
     static void saveGainToEEPROM();
     static void loadGainFromEEPROM();
-    static void setViewMode(int mode) { viewMode = (mode == 1) ? 1 : 0; }
+    static void setViewMode(int mode) { viewMode = (mode == 1 || mode == 2) ? mode : 0; }
     static int getViewMode() { return viewMode; }
     static void saveViewToEEPROM();
     static void loadViewFromEEPROM();
@@ -223,8 +223,9 @@ void SensorManager::saveViewToEEPROM()
 
 void SensorManager::loadViewFromEEPROM()
 {
-    // Solo 1 = clasica; cualquier otro valor (0, 0xFF de EEPROM virgen) = moderna
-    viewMode = (EEPROM.read(1) == 1) ? 1 : 0;
+    // 1 = clasica, 2 = 3D; cualquier otro valor (0, 0xFF de EEPROM virgen) = moderna
+    int v = EEPROM.read(1);
+    viewMode = (v == 1 || v == 2) ? v : 0;
 }
 
 void SensorManager::tare()
